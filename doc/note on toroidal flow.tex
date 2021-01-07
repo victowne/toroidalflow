@@ -28,7 +28,7 @@ according to Eq. 21 in \cite{sugama98}, i. e.
     \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\hat{b} \cdot \nabla \mathbf{U}), \label{eq2}
 \end{equation}
 \begin{equation}
-    \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\nabla \mathbf{U} \cdot \hat{b}). \label{eq3}
+    \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\mathbf{U} \cdot\nabla\hat{b}). \label{eq3}
 \end{equation}
 
 In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega_0(\psi_p)R^2 \nabla \zeta$,
@@ -178,25 +178,6 @@ Thus,
 \begin{equation}
     \partial_{\theta}(R^2 - \langle R^2\rangle) = 2R\partial_{\theta}R-\frac{R^2}{2\pi}
 \end{equation}
-% Considering
-% \begin{equation}
-% \begin{split}
-%     \mathbf{B}&=\nabla\psi\times\nabla(q\theta_f-\zeta)\\
-%     &=\frac{q_0}{r_0}\frac{d\psi}{dx}\nabla x\times\nabla y\\
-%     &=C(x)\nabla x\times\nabla y
-% \end{split}
-% \end{equation}
-% and
-% \begin{equation}
-%     \mathbf{b}\cdot\nabla x\times\nabla y=\frac{\nabla x\times\nabla y}{|\nabla x\times\nabla y|}\cdot\nabla x\times\nabla y=|\nabla x\times\nabla y|,
-% \end{equation}
-% \begin{equation}
-% \begin{split}
-%     \mathbf{b}\cdot\nabla\Phi_1&=\frac{\nabla x\times\nabla y}{|\nabla x\times\nabla y|}\cdot\nabla z\frac{\partial \Phi_1}{\partial z}\\
-%     &=\frac{1}{J|\nabla x\times\nabla y|}\frac{\partial \Phi_1}{\partial z}\\
-%     &=\frac{-ez}{jac*bdgxcgy}
-% \end{split}
-% \end{equation}
 
 \newpage
 \section{Changes in weight equation} 
@@ -298,11 +279,11 @@ then we have
 \begin{equation}
     \begin{split}
         &-\langle\boldsymbol{\rho}\cdot\nabla \mathbf{U}\cdot\nabla\phi\rangle=
-        \bigg(\frac{U\langle\rho_R\rangle}{R} -\omega'R\frac{\partial r}{\partial R}\langle\rho_R\rangle -\omega'R\frac{\partial r}{\partial Z}\langle\rho_Z\rangle\bigg)\frac{r_0}{q_0R}\bigg\langle\frac{\partial\phi}{\partial y}\bigg\rangle\\
-        &+\frac{U\langle\rho_\zeta\rangle}{R}\bigg(\bigg\langle\frac{\partial\phi}{\partial x}\bigg\rangle\frac{\partial r}{\partial R} 
-        + \bigg\langle\frac{\partial\phi}{\partial y}\bigg\rangle\bigg(\frac{\partial y}{\partial r}\frac{\partial r}{\partial R}
+        \bigg(\frac{U}{R}\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle -\omega'R\frac{\partial r}{\partial R}\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle -\omega'R\frac{\partial r}{\partial Z}\bigg\langle\rho_Z\frac{\partial\phi}{\partial y}\bigg\rangle)\frac{r_0}{q_0R}\\
+        &+\frac{U}{R}\bigg(\bigg\langle\rho_\zeta\frac{\partial\phi}{\partial x}\bigg\rangle\frac{\partial r}{\partial R} 
+        + \bigg\langle\rho_\zeta\frac{\partial\phi}{\partial y}\bigg\rangle\bigg(\frac{\partial y}{\partial r}\frac{\partial r}{\partial R}
         + \frac{r_0}{q_0}\hat{q}\frac{\partial \theta}{\partial R}\bigg)
-        + \bigg\langle\frac{\partial \phi}{\partial z}\bigg\rangle q_0R_0\frac{\partial \theta}{\partial R}\bigg)
+        + \bigg\langle\rho_\zeta\frac{\partial \phi}{\partial z}\bigg\rangle q_0R_0\frac{\partial \theta}{\partial R}\bigg)
     \end{split}
 \end{equation}
 
@@ -382,6 +363,23 @@ So we have
 \end{equation}
 }
 According to Eq. \ref{t1} - \ref{t3}, Eq. \ref{t2} can be coded using existing variables.
+
+We may need the following operator to simplify the coding process,
+\begin{equation*}
+    \hat{R}\cdot\nabla y = \frac{\partial y}{\partial r}\frac{\partial r}{\partial R} + \frac{r_0}{q_0}\hat{q}\frac{\partial \theta}{\partial R}
+\end{equation*}
+\begin{equation*}
+    \hat{Z}\cdot\nabla y = \frac{\partial y}{\partial r}\frac{\partial r}{\partial Z} + \frac{r_0}{q_0}\hat{q}\frac{\partial \theta}{\partial Z}
+\end{equation*}
+\begin{equation*}
+    \hat{R}\cdot\nabla z = q_0R_0\frac{\partial \theta}{\partial R}
+\end{equation*}
+\begin{equation*}
+    \hat{Z}\cdot\nabla z = q_0R_0\frac{\partial \theta}{\partial Z}
+\end{equation*}
+\begin{equation*}
+    \hat{\zeta}\cdot\nabla y = -\frac{r_0}{q_0R}
+\end{equation*}
 \newpage
 \bibliographystyle{unsrt}
 \bibliography{refs}
