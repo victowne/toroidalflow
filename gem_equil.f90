@@ -1,6 +1,6 @@
 MODULE gem_equil
   IMPLICIT NONE
-  integer :: itube,ibase,iperi,iperidf,ibunit,icandy=0,isprime=0,ildu=0,eldu=0
+  integer :: itube,ibase,iperi,iperidf,ibunit,icandy=0,isprime=0,ildu=0,eldu=0,igmrkr=1,igmrkre=1
   real :: mimp=2,mcmp=12,chgi=1,chgc=6
   real :: elon0=1.0,tria0=0.0,rmaj0=1000.0,r0,a=360.0,selon0=0.0,&
              stria0=0.0,rmaj0p=-0.0,q0p=0.006,q0=1.4, elonp0=0.,triap0=0.,erp=0.01,er0=0.,q0abs
@@ -9,7 +9,7 @@ MODULE gem_equil
   real :: f0, f0p,bunit
   real :: rin,rout,dr,dth,delz,jacmax,eadj
   real :: cn0e,cn0i,cn0b,cn0c,n0emax,n0imax,n0bmax,n0cmax
-  real :: r0a,lxa,lymult,delra,delri,delre,delrn,rina,routa,betai, &
+  real :: r0a,lxa,lymult,lxmult,delra,delri,delre,delrn,rina,routa,betai, &
                tir0,xnir0,xu,frequ,vu,eru
 
   integer :: nr=300,nr2=150,ntheta=100,idiag=0,isgnf=1, isgnq=1
@@ -25,7 +25,9 @@ MODULE gem_equil
                                       capti,capte,captb,captc,capni,capne,&
                                       capnb,capnc,zeff,nue0,phinc,phincp,&
                                       er,upari,dipdr
-
+  !arrays for computing (b. grad rho) effect
+  real,dimension(:,:), allocatable :: e1gx,e1gy,e2gx,e2gy,bdge1gx,bdge1gy,bdge2gx,bdge2gy
+  
 !for Miller local flux-tube
   real :: candyf0p
   real,dimension(:),allocatable :: candyd0,candyd1,candyd2,candynus,candynu1,candydr
@@ -44,17 +46,21 @@ contains
   subroutine new_equil()
       implicit none
       real(8) :: pi,pi2,r,th,s,ss,c1,c2,lti,s0,delsi,lte,delse,teti,lnh,delsh,sh
-      real(8) :: lref,kappat,kappan,wt,wn
-      parameter(kappat=6.96,kappan=2.23,wt=0.3,wn=0.3)
+      real(8) :: lref,kappat,kappate,kappan,wt,wn
+      parameter(kappat=6.96,kappate=6.96,kappan=2.23,wt=0.3,wn=0.3)
       parameter(c1=0.43236,c2=2.33528,lti=1200.0,s0=0.5,delsi=0.9, &
                 lte=1200.0,delse=0.9,lnh=600,delsh=0.2,sh=0.5)
       integer :: i,j,k,m,myid,j1,j2,ileft(0:nr)
-      real(8) :: dum,x,denom,dum1,dum2,dum3,dum4,xp,xpp,cutoff,delrai=0.01,delrao=0.01,t,psitmax,dt,beamconst,t0
+      real(8) :: dum,x,denom,dum1,dum2,dum3,dum4,xp,xpp,cutoff,delrai=0.05,delrao=0.05,t,psitmax,dt,beamconst,t0
       real(8) :: vpar,vperpc,vperp,v,plam,vpatcl,auglam,dplam,dlam2,dist,beamconst1,preconst1 
       real(8) :: e,proton,xu,vu,omegau,nu,Tu,Bu
       real(8) :: r1,r2,th1,th2,z1,z2,rdum,rdum1,thdum,thdum1,wx0,wx1,wy0,wy1,psitrin,psita,psitrout
       real(8) :: btor(0:nr,0:ntheta),rhogem(0:nr),rgemplot(0:ntheta-1),zgemplot(0:ntheta-1)
       real(8) :: elonp(0:nr),triap(0:nr)
+
+      !arays for computing (b.grad rho) effect in vorticity
+      real(8) :: e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta)
+      real(8) :: bdge1r(0:nr,0:ntheta),bdge1z(0:nr,0:ntheta),bdge2r(0:nr,0:ntheta),bdge2z(0:nr,0:ntheta),bdge2zet(0:nr,0:ntheta)      
 
       allocate(bfld(0:nr,0:ntheta),qhat(0:nr,0:ntheta),radius(0:nr,0:ntheta), &
                gr(0:nr,0:ntheta),gth(0:nr,0:ntheta),grdgt(0:nr,0:ntheta), &
@@ -82,7 +88,10 @@ contains
                capts(1:5,0:nr),capns(1:5,0:nr),vpars(1:5,0:nr),&
                vparsp(1:5,0:nr),tgis(1:5))
 
-!Normalization
+      allocate(e1gx(0:nr,0:ntheta),e1gy(0:nr,0:ntheta),e2gx(0:nr,0:ntheta),e2gy(0:nr,0:ntheta), &
+           bdge1gx(0:nr,0:ntheta),bdge1gy(0:nr,0:ntheta),bdge2gx(0:nr,0:ntheta),bdge2gy(0:nr,0:ntheta))
+
+      !Normalization
       e = 1.6e-19
       proton = 1.67e-27
       Bu = 2.0
@@ -186,16 +195,16 @@ contains
          sf(i) = 2.52*s**2-0.16*s+0.86
          sf(i) = sf(i)*isgnq
          t0i(i) = exp(-kappat*wt*a/lref*tanh((r-r0)/(wt*a)))
-         t0e(i) = t0i(i)
+         t0e(i) = exp(-kappate*wt*a/lref*tanh((r-r0)/(wt*a)))
          xn0e(i) = exp(-kappan*wn*a/lref*tanh((r-r0)/(wn*a)))
          xn0i(i) = xn0e(i)
+         xn0c(i) = 0.
          phincp(i) = 0.
-         nue0(i) = 0.
-         zeff(i) = 0.         
+         nue0(i) = 1.
+         zeff(i) = 1.         
       end do
       q0 = sf(nr/2)
       q0abs = abs(q0)
-
 
       do i = 1,nr-1
          r = rin+i*dr
@@ -352,6 +361,11 @@ contains
       tgis(3) = t0s(3,1)
       tge = t0e(1)
 
+!      capni = 0.
+!      capne = 0.
+!      capti = 0.
+!      capte = 0.
+      
       capts(1,:) = capti(:)
       capts(2,:) = captc(:)
 !      capts(3,:) = captb(:)
@@ -432,10 +446,78 @@ contains
          end do
       end do
 
+      do i = 0,nr
+         do j = 0,ntheta
+            dum=sqrt(srbr(i,j)**2+srbz(i,j)**2)
+            e1r(i,j) = srbr(i,j)/dum
+            e1z(i,j) = srbz(i,j)/dum
+            e2r(i,j) = -e1z(i,j)*f(i)/(radius(i,j)*bfld(i,j))
+            e2z(i,j) = e1r(i,j)*f(i)/(radius(i,j)*bfld(i,j))
+            e2zet(i,j) = (-e1r(i,j)*srbr(i,j)-e1z(i,j)*srbz(i,j))*psip(i)/(radius(i,j)*bfld(i,j))
+         end do
+      end do
+      call bdgrad(e1r,bdge1r)
+      call bdgrad(e1z,bdge1z)
+      call bdgrad(e2r,bdge2r)
+      call bdgrad(e2z,bdge2z)
+      call bdgrad(e2zet,bdge2zet)      
+
+      do i = 0,nr
+         do j = 0,ntheta
+            e1gx(i,j) = sqrt(srbr(i,j)**2 + srbz(i,j)**2)
+            e1gy(i,j) = dydr(i,j)*e1gx(i,j) + (r0/q0)*qhat(i,j)*grdgt(i,j)/e1gx(i,j)
+            e2gx(i,j) = e2r(i,j)*srbr(i,j) + e2z(i,j)*srbz(i,j)
+            dum = e2r(i,j)*thbr(i,j)+e2z(i,j)*thbz(i,j)
+            e2gy(i,j) = dydr(i,j)*e2gx(i,j)+(r0/q0)*qhat(i,j)*dum-e2zet(i,j)*r0/(q0*radius(i,j))
+            bdge1gx(i,j) = bdge1r(i,j)*srbr(i,j)+bdge1z(i,j)*srbz(i,j)
+            dum = bdge1r(i,j)*thbr(i,j)+bdge1z(i,j)*thbz(i,j)
+            bdge1gy(i,j) = dydr(i,j)*bdge1gx(i,j)+(r0/q0)*qhat(i,j)*dum-(r0/q0)*e1r(i,j)*f(i)/(bfld(i,j)*radius(i,j)**3)
+            bdge2gx(i,j) = (bdge2r(i,j)-e2zet(i,j)*f(i)/(bfld(i,j)*radius(i,j)**2))*srbr(i,j)+bdge2z(i,j)*srbz(i,j)
+            dum = (bdge2r(i,j)-e2zet(i,j)*f(i)/(bfld(i,j)*radius(i,j)**2))*thbr(i,j)+bdge2z(i,j)*thbz(i,j)
+            bdge2gy(i,j) = dydr(i,j)*bdge2gx(i,j)+(r0/q0)*qhat(i,j)*dum-(bdge2zet(i,j)+e2r(i,j)*f(i)/(bfld(i,j)*radius(i,j)**2))*r0/(q0*radius(i,j))
+         end do
+      end do
+
       dipdr = 0.
       bdcrvb = 0.
       curvbz = 0.
       psip2 = 0.
+
+      if(myid==0)then
+         open(11,file='xpp',status='replace')
+         write(11,*)'xu,omegau,vu = ', xu, omegau, vu
+         write(11,*)'q0,q0p,psia=', q0,q0p
+
+10       format(1x,i5,12(1x,e16.9))
+         do i = 0,nr
+            r = rin+i*dr
+            write(11,10)i,r/a,sf(i),f(i),t0e(i),t0i(i),xn0e(i),xn0i(i),capte(i),capti(i),capne(i),capni(i)
+         end do
+      end if
   end subroutine new_equil
 
+  subroutine bdgrad(u,v)
+    implicit none
+    real(8) :: pi,pi2,r,th
+    integer :: i,j,k,m
+    real(8) :: dum,x,denom,dum1,dum2,dum3,dum4
+    real(8) :: u(0:nr,0:ntheta),v(0:nr,0:ntheta),w(0:nr,0:ntheta)
+
+
+    do i = 0,nr
+       do j = 1,ntheta-1
+          w(i,j) = (u(i,j+1)-u(i,j-1))/(2*dth)
+       end do
+       w(i,0) = (u(i,1)-u(i,ntheta-1))/(2*dth)
+       w(i,ntheta) = w(i,0)
+    end do
+
+    do i = 0,nr
+       do j = 0,ntheta
+          v(i,j) = psip(i)/(bfld(i,j)*radius(i,j))*w(i,j)*grcgt(i,j)
+       end do
+    end do
+  end subroutine bdgrad
+
+  
 END MODULE gem_equil

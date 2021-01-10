@@ -28,8 +28,8 @@ subroutine outd(n)
      !         call phixz(upar(:,:,:),'upaxz',40,n)
 
      !         call phixy(dti(1,:,:,:),'tpixy',29,n)
-     !         call dump3d(phi(:,:,:),'phi3d',50,n)
-     !         call dump3d(apar(:,:,:),'apa3d',51,n)
+     call dump3d(phi(:,:,:),'phi3d',50,n)
+     call dump3d(apar(:,:,:),'apa3d',51,n)
 
   endif
 
@@ -266,96 +266,6 @@ subroutine mphxz(grd,fl,unt)
 
   !       return
 end subroutine mphxz
-
-!--------------------------------------------------------------
-
-subroutine histout(unt)
-
-  use gem_com
-  use gem_equil
-
-  implicit none
-
-  integer :: i,j,k
-  INTEGER :: unt,n,m
-  character(len=70) flnm
-
-
-  if (MyId.eq.Master) then
-
-     flnm=outdir//'hist.out'
-     open(unt,file=flnm,form='formatted', &
-          status='unknown',position='rewind')
-     write(unt,80)nsm,nm,modem,dt
-     do m=1,modem
-        write(unt,90)lmode(m),mmode(m),nmode(m)
-     enddo
-     do m=1,modem
-        do n=1,nm
-           write(unt,100)pmodehis(m,n)
-        enddo
-     enddo
-     do m=1,nsm
-        do n=1,nm
-           write(unt,110)ke(m,n)
-        enddo
-     enddo
-     do m=1,nsm
-        do n=1,nm
-           write(unt,110)pfl_es(m,1,n)
-        enddo
-     enddo
-     do m=1,nsm
-        do n=1,nm
-           write(unt,110)efl_es(m,1,n)
-        enddo
-     enddo
-     do n=1,nm
-        write(unt,110)fe(n)
-     enddo
-     do n=1,nm
-        write(unt,110)rmsphi(n)
-     enddo
-
-80   format (3I6,e10.3)
-90   format (3I6)
-100  format (2e10.3)
-110  format (1e10.3)
-
-     endfile unt
-     close(unt)
-
-     ! output particle and energy fluxes to file
-     flnm=outdir//'pefluxes.out'
-     open(18,file=flnm,form='formatted', &
-          status='unknown',position='rewind')
-     write(18,2) nsm,nsubd,nm,tir0,xnir0,xu,frequ,vu,rina,routa
-2    format(' no. ion species, no. radial slices, no. timesteps, '/&
-          'energy unit (eV), ref. density (cm**-3), length unit (cm), '/&
-          'frequency unit (1/sec), veloc. unit (cm/sec),'/&
-          ' r-in/a, r-out/a'/3i5,5x,1p3e20.6/4e20.6)
-     write(18,1)
-1    format(/' species 0 (electrons)')
-     write(18,3)
-3    format(/' particle flux(1<=iradius<=nsubd,1<=timestep<=nm)'/)
-     write(18,4) (n,(pfle_es(i,n),i=1,nsubd),n=1,nm)
-4    format((i5,1p8e13.5))
-     write(18,5)
-5    format(/' energy flux(1<=iradius<=nsubd,1<=timestep<=nm)'/)
-     write(18,4) (n,(efle_es(i,n),i=1,nsubd),n=1,nm)
-     do m=1,nsm
-        write(18,6) m
-6       format(/' ion species',i2)
-        write(18,3)
-        write(18,4) (n,(pfl_es(m,i,n),i=1,nsubd),n=1,nm)
-        write(18,5)
-        write(18,4) (n,(efl_es(m,i,n),i=1,nsubd),n=1,nm)
-     end do
-
-  endif
-
-  !       return
-end subroutine histout
 
 !--------------------------------------------------------------
 
@@ -796,3 +706,89 @@ subroutine timephi(grd,rim,fl,unt,n)
 end subroutine timephi
 
 !--------------------------------------------------------------
+subroutine balloon
+
+  use gem_com
+  use gem_equil
+  use gem_fft_wrapper
+
+  implicit none
+
+  integer :: i,j,i1,j1,k,n,ir,ith,n1,n2, numx,numz,&
+       unt=71,unt1=72,unt2=73,upol=74,upolxz=75
+  parameter (n1=5000,n2=10000,numx=400,numz=600)
+  integer :: m
+  REAL :: grd(0:imx,0:jmx,0:kmx),yxz(0:numx,0:numz)
+  real :: r,th,thf,qhatp,qr,dum,xt,yt,zt,dum1,dum2,wx0,wx1,wy0,wy1,wz0,wz1
+  real :: xmin,xmax,zmin,zmax,dumx,dumz
+  real :: hghtp,radiusp,wr0,wr1
+  complex :: tmp3d(0:imx-1,0:jmx-1,0:kmx),cdum,cdum1
+  character(len=5) fl
+  character(len=70) flnm,balloonstr
+
+  if(isphi==0)flnm=outdir//'apa3d'//'.out'
+  if(isphi==1)flnm=outdir//'phi3d'//'.out'
+
+  if (MyId.eq.Last) then
+     open(unt,file=flnm,form='formatted', &
+          status='old',action='read')
+     i1 = 1
+     do n=i1,ipg
+        do k = 0,kmx
+           do j = 0,jmx
+              do i = 0,imx
+                 read(unt,100)grd(i,j,k)
+              end do
+           end do
+        end do
+     end do
+     !         endfile unt
+     close(unt)
+
+     do k = 0,kmx
+        do j = 0,jmx-1
+           do i = 0,imx-1
+              tmpx(i) = grd(i,j,k)
+           end do
+           call ccfft('x',-1,imx,1.0,tmpx,coefx,workx,0) !forward transfor to match with derivation in 2/9/2020 note
+           do i = 0,imx-1
+              tmp3d(i,j,k) = tmpx(i)
+           end do
+        end do
+        do i = 0,imx-1
+           do j = 0,jmx-1
+              tmpy(j) = tmp3d(i,j,k)
+           end do
+           call ccfft('y',-1,jmx,1.0,tmpy,coefy,worky,0)
+           do j = 0,jmx-1
+              tmp3d(i,j,k) = tmpy(j)
+           end do
+        end do
+     end do
+
+     open(unt1,file='ballooning',form='formatted', &
+          status='unknown',position='rewind')
+
+     do i = -8,8
+        j = i
+        if(i<0)j = i+imx
+        do k = 0,kmx-1
+           th = -pi+pi2/kmx*float(k)+pi2*i
+           cdum = tmp3d(j,1,k)
+           cdum1 = exp(-IU*pi2/ly*(pi2*r0-pi*r0*q0p/q0*lx)*i) !verified that a wrong sign in exponential results in discontinuity
+           dum1 = real(cdum*cdum1)
+           dum2 = aimag(cdum*cdum1)
+           write(unt1,140)i,k,th,dum1,dum2,sqrt(dum1**2+dum2**2),real(cdum1),aimag(cdum1) 
+        end do
+     end do
+     close(unt1)
+  endif
+
+100 format (e12.5)
+110 format (3I5)
+120 format (3(2x,e12.5))
+130 format (2(2x,e12.5))
+140 format (1x,I5,1x,I5,9(2x,e12.5))
+  !       return
+end subroutine balloon
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -7,18 +7,20 @@ program gem_main
   use gem_fft_wrapper
 
   implicit none
-  integer :: n,i,j,k,ip
+  integer :: n,i,j,k,ip,ns
 
   call initialize
   ! use the following two lines for r-theta contour plot
   if(iCrs_Sec==1)then
      call pol2d
+!     call balloon
      goto 100
   end if
   if(iget.eq.0)call loader_wrapper
   if(iget.eq.1)then
      call restart(1,0)
   end if
+
   starttm=MPI_WTIME()
 
   if(isft==1)then
@@ -28,6 +30,10 @@ program gem_main
 
   do  timestep=ncurr,nm
      tcurr = tcurr+dt
+     do ns = 1,nsm
+        if(ision==1)call wiatxeps(ns,0)
+     end do
+     if(ifluid==1)call weatxeps(0)
 
      call accumulate(timestep-1,0)
      call ampere(timestep-1,0)
@@ -55,6 +61,8 @@ program gem_main
 
   end do
   call ftcamp
+  call wiatxeps(1,1)
+  if(ifluid==1)call weatxeps(1)
   lasttm=MPI_WTIME()
   tottm=lasttm-starttm
   !  write(*,*)'ps time=',pstm,'tot time=',tottm
@@ -105,30 +113,41 @@ subroutine init
 
   use gem_com
   use gem_equil
+  use omp_lib
   implicit none
+
+  include 'fftw3.f03'
   character(len=62) dumchar
-  INTEGER :: i,j,k,m,n,ns,idum,i1,j1,k1
+  INTEGER :: i,j,k,m,n,ns,idum,i1,j1,k1,nthreads,iam,i_err
   INTEGER :: mm1,mm2,lr1
   real :: mims1,tets1,q1,kappan,kappat,r,qr,th,cost,dum,zdum
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp
   real :: grp,gxdgyp,jacp,jfnp,gn0ep,gt0ep,gt0ip,grdgtp,gthp
-  real,DIMENSION (1:5) :: gn0sp
+  real,DIMENSION (1:5) :: gn0sp,gt0sp
   real :: wx0,wx1,wz0,wz1,b
 
+!$omp parallel private(iam)
+nthreads = omp_get_num_threads()
+iam = omp_get_thread_num()
+write(*,*)'myid, nthreads, iam = ',myid, nthreads, iam
+!$omp end parallel
+n_omp = nthreads
+
+
   !jycheng
-  namelist /primary_parameters/ itube,mimp,mcmp,chgi,chgc,imx,jmx,kmx,mmx,mmxe,nmx,nsmx,ntube,lxa, &
-                                lymult,jcnt,dt,nm,nsm,amp,fradi,r0a,vpp,vt0,yd0,ifluid,isg,amie,rneui, &
-                                betai,nonlin1,nonlin2,nonline,ipara,vwidth,vwidthe,vcut,micell,mecell, &
-                                mims3,q3
-  namelist /control_parameters/ iperi,iperidf,ibunit,modemx,delra,delri,delre,delrn,nlow,xshape, &
-                                yshape,zshape,iput,iget,ision,isiap,peritr,llk,mlk,onemd,izonal, &
-                                adiabatic_electron,ineq0,iflut,nzcrt,npze,npzi,npzc,npzb,iphbf,iapbf, &
-                                idpbf,cut,kxcut,kycut,bcut,c4,vexbsw,vparsw,mach,gamma_E,isuni, &
-                                lr1,iflr,iorb
-  namelist /diagnosis_parameters/ icrs_sec,ipg,isphi,nplot,xnplt,modem,isft,mynf,frmax,ifskp,idg
-  namelist /fluxtube/ Rovera,elon0,selon0,tria0,stria0,rmaj0p,q0,shat0,teti,tcti,rhoia,Rovlni,Rovlti, &
+  namelist /primary_parameters/ itube,mimp,mcmp,chgi,chgc,imx,jmx,kmx,nsmx,ntube,lxa, &
+                                lymult,jcnt,dt,nm,nsm,amp,r0a,ifluid,isg,amie,rneui, &
+                                betai,nonlin1,nonlin2,nonline,iflut,iexb,ipara,vcut,wecut,micell,mecell, &
+                                qbeam,mbeam,isonew
+  namelist /control_parameters/ iperi,iperidf,delra,delri,delre,delrn,nlow,xshape, &
+                                yshape,zshape,iput,iget,igetmx,ision,isiap,peritr,llk,mlk,onemd,izonal, &
+                                adiabatic_electron,ineq0,nzcrt,npze,npzi,npzc,npzb,iphbf,iapbf, &
+                                idpbf,cut,kxcut,kycut,bcut,c4,vexbsw,vparsw,mach,gamma_E,isuni,isunie, &
+                                lr1,iflr,iorb,nxsrc,nesrc,nzsrc,gammah,ghzon,gamgtc,gamtoy
+  namelist /diagnostics_parameters/ icrs_sec,ipg,isphi,nplot,xnplt,isft,mynf,frmax,ifskp,idg
+  namelist /fluxtube/ lxmult,Rovera,elon0,selon0,tria0,stria0,rmaj0p,q0,shat0,teti,tcti,rhoia,Rovlni,Rovlti, &
                        Rovlne,Rovlte,Rovlnc,Rovltc,ncne,nuacs
-  namelist /others/ nrst,eprs,tor,ishift,width
+  namelist /others/ nrst,eprs,tor,vpp,vt0,yd0,nmx
 
   IU=cmplx(0.,1.)
   pi=4.0*atan(1.0)
@@ -143,10 +162,22 @@ subroutine init
   open(unit=115,file='gem.in',status='old',action='read')
   read(115,nml=primary_parameters)
   read(115,nml=control_parameters)
-  read(115,nml=diagnosis_parameters)
+  read(115,nml=diagnostics_parameters)
   read(115,nml=fluxtube)
   read(115,nml=others)
   close(115)
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'pass read namelists',myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
+  end if
+
+
   nonlin(1)=nonlin1
   nonlin(2)=nonlin2
   ntube=int(numprocs/kmx)
@@ -164,12 +195,36 @@ subroutine init
   call ppinit_decomp(myid,numprocs,ntube,tube_comm,grid_comm)
   call hybinit
   call mpi_barrier(mpi_comm_world,ierr)
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'pass hybinit',myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
+  end if
   
   im=imx;jm=jmx;km=kmx
+  cgpfacx = 4
+  cgpfacy = 2
+  icgp = imx/cgpfacx
+  jcgp = jmx/cgpfacy
 
   if(isft==1) iget = 1
-  nfreq = kmx*mynf
+  nfreq = 400
   call new_gem_com()
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'pass new_equil',myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
+  end if
   !      rin = r0-lx/2
   !      rout = r0+lx/2
   rina = r0a-lxa/2.
@@ -187,13 +242,10 @@ subroutine init
   lz = pi2*q0abs*rmaj0
   delz = lz/ntheta
   rneu = nuacs
-  if(onemd==1)then
-     kxcut=pi2*shat0*pi2/ly*2.1
-     kycut=pi2/ly*1.1
+  kycut=pi2/ly*(jcnt-1)/2*1.1
+  if(itube==1)then
+     kxcut=pi2*shat0*kycut*4
   end if
-  achii=0.
-  achie=0.
-  addi=0.
 
   if(myid.eq.master)then
      open(19, file='eqdat', status='unknown')
@@ -206,7 +258,7 @@ subroutine init
      write(19,*)'a/cs=', a/sqrt(t0e(nr/2)/mimp)
      write(19,*)'i,   sf,   ni,   ne,   nc,   ti,   tc,   capni,   capnc, captc'
      do i = 0,nr
-        write(19,99)i,sf(i),xn0i(i),xn0e(i),t0i(i),t0e(i),capni(i),capne(i),capti(i),capte(i)
+        write(19,99)i,sf(i),xn0e(i),xn0i(i),xn0c(i),t0e(i),t0i(i),t0c(i),capne(i),capni(i),capnc(i),capte(i),capti(i),captc(i)
      end do
      write(19,99)i,cn0e,cn0s(1),cn0s(2),cn0s(3)
      close(19)
@@ -226,20 +278,20 @@ subroutine init
   !
   !      write(*,*)'br0,lr0,q0,qp = ', br0,lr0,q0,qp
 
-  if(isuni.eq.0)vwidthe=vwidth
   dte = dt
   iadi = 0
   if(isg.gt.0.)fradi = isg
   if(ifluid.eq.0)then
      iadi = 1
-     fradi = cn0e*xn0e(nr/2)/t0e(nr/2)
+     fradi = 1.0
   end if
 
   !     begin reading species info, ns=1,nsm...
   ns = 1
-  mims(3)=mims3
-  q(3)=q3
+  mims(3)=mbeam
+  q(3)=qbeam
   mims(1)=mimp;mims(2)=mcmp;q(1)=chgi;q(2)=chgc
+  rhoia = mims(1)*sqrt(T0e(nr/2)/mims(1)) /(q(1)*1.) /a
   tmm(1)=mm1
   tmm(2)=mm2
   mm(:)=int(mm1/numprocs)
@@ -250,9 +302,9 @@ subroutine init
   lr(1)=lr1
   lr(2)=lr1
   lr(3)=lr1
-
+  
   pzcrite = abs(psi(nr)-psi(0))/br0/npze
-  encrit = 1.
+  encrit = 0.2*t0e(nr/2)
   pzcrit(1) = q(1)*abs(psi(nr)-psi(0))/br0/npzi
   pzcrit(2) = q(2)*abs(psi(nr)-psi(0))/br0/npzc
   pzcrit(3) = q(3)*abs(psi(nr)-psi(0))/br0/npzb
@@ -263,16 +315,22 @@ subroutine init
   emass = 1./amie
   qel = -1.
 
-  mbeam = 2
-  qbeam = 1
+  vsphere = sqrt(vcut*1.1) * sqrt(tge/emass)
+  cv = 4.0/3.0*pi * vsphere**3
 
+  ecutsrc = vcut
+  
   if(iget.eq.1) amp=0.
   !     totvol is the square for now...
   dx=lx/float(im)
   dy=ly/float(jm)
   dz=lz/float(km)
   !      totvol=lx*ly*lz
-
+  dxcgp = lx/icgp
+  dycgp = ly/jcgp
+  dxsrc = lx/nxsrc
+  desrc = ecutsrc/nesrc
+  
   e0=lr0/q0/br0
   !     
   do i=0,nxpp
@@ -304,20 +362,6 @@ subroutine init
         jft(m) = jmx-j1
      end if
   end do
-
-  !     set arrays for mode history plots...
-  lmode(1)=0
-  lmode(2)=0
-  lmode(3)=0
-  lmode(4)=0
-  mmode(1)=1 !int(.33*ly/2/pi)-1
-  mmode(2)=2 !int(.33*ly/2/pi)
-  mmode(3)=3 !int(.33*ly/2/pi)+1
-  mmode(4)=4 !int(.33*ly/2/pi)+2
-  nmode(1)=km/2
-  nmode(2)=km/2
-  nmode(3)=km/2
-  nmode(4)=km/2
 
   !     initialize bfld   
 
@@ -415,7 +459,9 @@ subroutine init
         gt0ep = wx0*t0e(i)+wx1*t0e(i+1)        
         do ns = 1, nsm
            gn0sp(ns) = wx0*xn0s(ns,i)+wx1*xn0s(ns,i+1)
+           gt0sp(ns) = wx0*t0s(ns,i)+wx1*t0s(ns,i+1)           
            gn0s(ns,i1) = gn0sp(ns)
+           gt0s(ns,i1) = gt0sp(ns)
         enddo
         gt0ip = wx0*t0s(1,i)+wx1*t0s(1,i+1)        
         b=1.-tor+tor*bfldp
@@ -450,22 +496,23 @@ subroutine init
      if(myid.eq.master)open(9, file='plot', &
           status='unknown',position='append')
      write(9,*)'dt,beta= ',dt, beta
-     write(9,*)'amp,vpp,yd0 = ',amp,vpp,yd0
+     write(9,*)'amp = ',amp
      write(9,*)'peritr,ifluid= ',peritr,ifluid
-     write(9,*)'tor,nonlin= ',tor,nonlin(1),nonlin(2)
+     write(9,*)'tor,nonlin(1:2),nonline= ',tor,nonlin(1),nonlin(2),nonline
      write(9,*)'isuni= ',isuni, 'amie= ',amie
-     write(9,*)'kxcut,kycut,bcut= ',kxcut,kycut,bcut
+     write(9,*)'kxcut,kycut,bcut,wecut= ',kxcut,kycut,bcut,wecut
      write(9,*)'fradi,isg= ',fradi,isg
      write(9,*)'llk,mlk,onemd =',llk,mlk,onemd
-     write(9,*)'vwidth (i,e), vcut= ', vwidth,vwidthe,vcut
+     write(9,*)'vcut= ', vcut
      write(9,*)'rneu= ', rneu
      write(9,*)'V-ExB switch= ', vexbsw
      write(9,*)'V-parallel switch= ', vparsw
-     write(9,*)'mm1= ',mm1
+     write(9,*)'tot mmi,tot mme= ',mm1,mm2
      write(9,*)'pzcrite,encrit = ',pzcrite,encrit
      write(9,*) 'lxa,lymult,delra,r0a,rina,routa=',lxa,lymult,delra,r0a,rina,routa
      write(9,*) 'a,r0,rmaj0,q0,lx,ly,lz=',a,r0,rmaj0,q0,lx,ly,lz
      write(9,*) 't0,kyrhoi_local=',t0i(nr/2),2*pi*sqrt(mims(1))*sqrt(t0i(nr/2))/ly
+     write(9,*) 'isonew,nzcrt,nzsrc=',isonew,nzcrt,nzsrc      
      close(9)
   end if
 
@@ -478,7 +525,7 @@ subroutine init
      write(*,*)'kxcut,kycut,bcut= ',kxcut,kycut,bcut
      write(*,*)'fradi,isg= ',fradi,isg
      write(*,*)'llk,mlk,onemd =',llk,mlk,onemd
-     write(*,*)'vwidth (i,e), vcut= ', vwidth,vwidthe,vcut
+     write(*,*)'vcut= ', vcut
      write(*,*)'rneu= ', rneu
      write(*,*)'V-ExB switch= ', vexbsw
      write(*,*)'V-parallel switch= ', vparsw
@@ -515,15 +562,23 @@ subroutine ppush(n,ns)
   INTEGER :: m,i,j,k,l,n,ns
   INTEGER :: np_old,np_new
   real :: rhog,vfac,kap,vpar,pidum,kaptp,kapnp,xnp
-  real :: b,th,r,enerb,cost,sint,qr,laps,sz,ter
+  real :: b,th,r,enerb,cost,sint,qr,laps,sz,ter,dtp
   real :: xt,xs,yt,xdot,ydot,zdot,pzdot,edot,pzd0,vp0
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
   integer :: mynopi
+  real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
 
-  pidum = 1./(pi*2)**1.5*vwidth**3
   mynopi = 0
   nopi(ns) = 0
+
+!$omp parallel do default(shared) &
+!$omp private(i,j,k,l,r,th,wx0,wx1,wy0,wy1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp) &
+!$omp private(grdgtp,fp,jfnp,psipp,psp,ter,kaptp,kapnp,xnp,vncp,vparspp,psip2p,dipdrp,b,pzp,rhog,rhox,rhoy) &
+!$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,kap,dum1,vxdum,xdot,ydot,zdot) &
+!$omp private(pzd0,pzdot,edot,dum,laps,qr) &
+!$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
+!$omp reduction(+: mynopi)
   do m=1,mm(ns)
      r=x2(ns,m)-0.5*lx+lr0
      k = int(z2(ns,m)/delz)
@@ -576,7 +631,7 @@ subroutine ppush(n,ns)
      psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
      dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
      b=1.-tor+tor*bfldp
-     pzp = mims(ns)*u2(ns,m)/b-q(ns)*psp/br0
+     pzp = mims(ns)*u2(ns,m)/b*fp/br0-q(ns)*psp/br0
 
      rhog=sqrt(2.*b*mu(ns,m)*mims(ns))/(q(ns)*b)*iflr
 
@@ -650,7 +705,7 @@ subroutine ppush(n,ns)
      pzd0 = tor*(-mu(ns,m)/mims(ns)/radiusp/bfldp*psipp*dbdtp*grcgtp)*b/bstar &
           +mu(ns,m)*vpar/(q(ns)*bstar*b)*dipdrp/radiusp*dbdtp*grcgtp
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
-          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*ipara
+          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0.
 
      edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
@@ -662,17 +717,35 @@ subroutine ppush(n,ns)
      z3(ns,m) = z2(ns,m) + 0.5*dt*zdot
      u3(ns,m) = u2(ns,m) + 0.5*dt*pzdot
 
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *mims(ns)**1.5
+     if(ildu==0)gdum = fdum/xnp
+     if(ildu==1)gdum = 1./(2*pi*tgis(ns))**1.5*exp(-vfac/tgis(ns)) *mims(ns)**1.5
+     i = int(x2(ns,m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkr==1)gdum = gmrkr(ns,i,k)
+     fovg = fdum/gdum
+     avwixepsp = avwixeps(ns,i,k)
+     avwixezp = avwixez(ns,i,k)     
+     dnisrcp = dnisrc(ns,i)
+     dnisrczp = dnisrcz(ns,i)     
+     fisrcp = fisrc(ns,i)
+     dtp = dtiz(ns,int(xt/dx))
+
      dum = 1-w2(ns,m)*nonlin(ns)*0.
-     if(ildu.eq.1)dum = (tgis(ns)/ter)**1.5*exp(vfac*(1/tgis(ns)-1./ter))
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
      !         vxdum = eyp+vpar/b*delbxp
-     w3(ns,m)=w2(ns,m) + 0.5*dt*(vxdum*kap + edot/ter)*dum*xnp
-
+     w3(ns,m)=w2(ns,m) + 0.5*dt*(vxdum*kap + edot/ter)*(fovg-w2(ns,m)*nonlin(ns)*isonew) - 0.5*dt*gammah*(avwixepsp-dnisrcp/(fisrcp+1e-8)*fovg)  &
+                                                                 - 0.5*dt*ghzon*dnisrczp/(fisrcp+1e-8)*fovg &
+                                                                 - 0.5*dt*gamgtc*(vfac/ter-1.5)*dtp/ter*fovg       &
+                                                                 - 0.5*dt*gamtoy*(1.5*sqrt(pi*vfac/ter)-3)*dtp/ter*fovg 
      !         if(x3(ns,m)>lx .or. x3(ns,m)<0.)w3(ns,m) = 0.
 
 
      if(itube==1)go to 333
-     if(abs(pzp-pzi(ns,m))>pzcrit(ns).or.abs(vfac-eki(ns,m))>0.2*eki(ns,m))then
+     if(abs(pzp-pzi(ns,m))>pzcrit(ns).or.abs(vfac-eki(ns,m))>0.5*eki(ns,m))then
         mynopi = mynopi+1
         x3(ns,m) = xii(ns,m)
         z3(ns,m) = z0i(ns,m)
@@ -731,6 +804,8 @@ subroutine ppush(n,ns)
      z3(ns,m) = min(z3(ns,m),lz-1.0e-8)
 
   enddo
+!$omp end parallel do
+
   call MPI_ALLREDUCE(mynopi,nopi(ns),1,MPI_integer, &
        MPI_SUM, MPI_COMM_WORLD,ierr)
 
@@ -787,11 +862,11 @@ subroutine cpush(n,ns)
   INTEGER :: n
   real :: phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp
   real :: wx0,wx1,wy0,wy1,wz0,wz1,w3old
-  INTEGER :: m,i,j,k,ns,l
+  INTEGER :: m,i,j,k,ns,l,mynowi
   INTEGER :: np_old,np_new
   real :: vfac,vpar,vxdum,dum,xdot,ydot,zdot,pzdot,edot,pzd0,vp0
   real :: rhog,xt,yt,zt,kap,xs,pidum,dum1,kaptp,kapnp,xnp
-  real :: b,th,r,enerb,cost,sint,qr,laps,sz,ter,bstar
+  real :: b,th,r,enerb,cost,sint,qr,laps,sz,ter,bstar,dtp
   real :: myke,mypfl_es(1:nsubd),mypfl_em(1:nsubd),myavewi
   real :: myefl_es(1:nsubd),myefl_em(1:nsubd),mynos
   real :: ketemp,pfltemp
@@ -799,7 +874,9 @@ subroutine cpush(n,ns)
   real :: sbuf(10),rbuf(10)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
+  real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
 
+  
   sbuf(1:10) = 0.
   rbuf(1:10) = 0.
   myavewi = 0.
@@ -813,8 +890,15 @@ subroutine cpush(n,ns)
   pfltemp=0.
   efltemp=0.
   nostemp=0.
-  pidum = 1./(pi*2)**1.5*vwidth**3
+  mynowi = 0
 
+!$omp parallel do default(shared) &
+!$omp private(i,j,k,l,r,th,wx0,wx1,wy0,wy1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp,grdgtp) &
+!$omp private(fp,jfnp,psipp,psp,ter,kaptp,kapnp,xnp,b,psip2p,dipdrp,pzp,vncp,vparspp,rhog,rhox,rhoy) &
+!$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,xdot,ydot,zdot) &
+!$omp private(pzd0,pzdot,edot,dum,dum1,vxdum,kap,w3old,laps,qr) &
+!$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
+!$omp reduction(+: myavewi,myke,mypfl_es,mypfl_em,myefl_es,myefl_em,mynos,mynowi)
   do m=1,mm(ns)
      r=x3(ns,m)-0.5*lx+lr0
 
@@ -866,7 +950,7 @@ subroutine cpush(n,ns)
      b=1.-tor+tor*bfldp
      psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
      dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
-     pzp = mims(ns)*u3(ns,m)/b-q(ns)*psp/br0
+     pzp = mims(ns)*u3(ns,m)/b*fp/br0-q(ns)*psp/br0
      vncp = wx0*phincp(i)+wx1*phincp(i+1)        
      vparspp = wx0*vparsp(ns,i)+wx1*vparsp(ns,i+1)        
 
@@ -942,7 +1026,7 @@ subroutine cpush(n,ns)
      pzd0 = tor*(-mu(ns,m)/mims(ns)/radiusp/bfldp*psipp*dbdtp*grcgtp)*b/bstar &
           +mu(ns,m)*vpar/(q(ns)*bstar*b)*dipdrp/radiusp*dbdtp*grcgtp
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
-          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*ipara
+          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0.
 
      edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
@@ -954,14 +1038,33 @@ subroutine cpush(n,ns)
      z3(ns,m) = z2(ns,m) + dt*zdot
      u3(ns,m) = u2(ns,m) + dt*pzdot
 
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *mims(ns)**1.5
+     if(ildu==0)gdum = fdum/xnp
+     if(ildu==1)gdum = 1./(2*pi*tgis(ns))**1.5*exp(-vfac/tgis(ns)) *mims(ns)**1.5
+     i = int(x3(ns,m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)     
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkr==1)gdum = gmrkr(ns,i,k)
+     fovg = fdum/gdum
+     avwixepsp = avwixeps(ns,i,k)
+     avwixezp = avwixez(ns,i,k)     
+     dnisrcp = dnisrc(ns,i)
+     dnisrczp = dnisrcz(ns,i)     
+     fisrcp = fisrc(ns,i)
+     dtp = dtiz(ns,int(xt/dx))
+     
      dum = 1-w3(ns,m)*nonlin(ns)*0.
-     if(ildu.eq.1)dum = (tgis(ns)/ter)**1.5*exp(vfac*(1/tgis(ns)-1./ter))
      !         vxdum = eyp+vpar/b*delbxp
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
      w3old = w3(ns,m)
-     w3(ns,m) = w2(ns,m) + dt*(vxdum*kap+edot/ter)*dum*xnp
-
-     if(abs(w3(ns,m)).gt.1.0.and.nonlin(ns)==1)then
+     w3(ns,m) = w2(ns,m) + dt*(vxdum*kap+edot/ter)*(fovg-w3(ns,m)*nonlin(ns)*isonew) - dt*gammah*(avwixepsp-dnisrcp/(fisrcp+1e-8)*fovg)  &
+                                                                 - dt*ghzon*dnisrczp/(fisrcp+1e-8)*fovg &
+                                                                 - dt*gamgtc*(vfac/ter-1.5)*dtp/ter*fovg &
+                                                                 - dt*gamtoy*(1.5*sqrt(pi*vfac/ter)-3)*dtp/ter*fovg           
+     if(abs(w3(ns,m)).gt.2.0.and.nonlin(ns)==1)then
+        mynowi = mynowi+1
         w3(ns,m) = 0.
         w2(ns,m) = 0.
      end if
@@ -1019,7 +1122,11 @@ subroutine cpush(n,ns)
 
      !     100     continue
   enddo
+!$omp end parallel do
 
+  call MPI_ALLREDUCE(mynowi,nowi(ns),1,MPI_integer, &
+       MPI_SUM, MPI_COMM_WORLD,ierr)
+  
   sbuf(1)=myke
   sbuf(2)=myefl_es(nsubd/2)
   sbuf(3)=mypfl_es(nsubd/2)
@@ -1153,6 +1260,7 @@ subroutine grid1(ip,n)
 
   use gem_com
   use gem_equil
+  use omp_lib
   implicit none
   real :: phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp
   real :: enerb,vxdum,dum,xdot,ydot
@@ -1166,21 +1274,29 @@ subroutine grid1(ip,n)
   real :: rbfr(0:imx,0:jmx)
   real :: myden(0:imx,0:jmx,0:1),myjpar(0:imx,0:jmx,0:1)
   real :: mydene(0:imx,0:jmx,0:1),myupar(0:imx,0:jmx,0:1)
-  real :: mydti(0:imx,0:jmx,0:1),mydte(0:imx,0:jmx,0:1)
+  real :: mydt(0:imx,0:jmx,0:1),mydtz(0:imx),mydnz(0:imx),dtz(0:imx),dnz(0:imx)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp
   real :: grp,gxdgyp,rhox(4),rhoy(4)
 
   rho=0.
   jion = 0.
-  mydte = 0.
   ns=1
   if(idg.eq.1)write(*,*)'enter ion grid1',mm(1)
+
   do ns = 1,nsm
      den(ns,:,:,:)=0.
      jpar(ns,:,:,:)=0.
      myden = 0.
      myjpar = 0.
-     mydti = 0.
+     mydt = 0.
+
+!$omp parallel do &
+!$omp default(none) & 
+!$omp private(dv,i,j,k,l,r,wx0,wx1,wz0,wz1,th,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,fp,jfnp,psipp,b) &
+!$omp private(rhog,rhox,rhoy,vfac,wght,vpar,xs,xt,yt) &
+!$omp shared(mm,ns,rin,u3,x3,y3,z3,mu,w3,thfnz,dbdr,dbdth,grcgt,bfld,radius,dydr,qhat,gr,gxdgy,f,jfn,psip) &
+!$omp shared(mims,q,tor,iflr,emass,amie,qel,lr0,q0,lx,ly,lz,dx,dy,dz,delz,dr,dth,lr,pi,gclr,tclr,kcnt) &
+!$omp reduction(+: myden,myjpar,mydt)
      do m=1,mm(ns)
         dv=float(lr(1))*(dx*dy*dz)
         r=x3(ns,m)-0.5*lx+lr0
@@ -1251,16 +1367,17 @@ subroutine grid1(ip,n)
 
            myden(i,j,k) = myden(i,j,k) + wght
            myjpar(i,j,k) = myjpar(i,j,k)+wght*vpar
-           mydti(i,j,k) = mydti(i,j,k)+wght*vfac
-
+           mydt(i,j,k) = mydt(i,j,k)+wght*vfac *2./3.   ! (1/3)mv^2
         enddo
      enddo
+!$omp end parallel do
+
      if(idg.eq.1)write(*,*)myid,'pass ion grid1'
      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
      !   enforce periodicity
      call enforce(myden(:,:,:))
      call enforce(myjpar)
-     call enforce(mydti)
+     call enforce(mydt)
      !      call filter(myden(:,:,:))
      !      call filter(myjpar(:,:,:))
 
@@ -1269,23 +1386,27 @@ subroutine grid1(ip,n)
            do k=0,mykm
               den(ns,i,j,k)=q(ns)*myden(i,j,k)/n0/jac(i,k)*cn0s(ns)
               jpar(ns,i,j,k) = q(ns)*myjpar(i,j,k)/n0/jac(i,k)*cn0s(ns)
-              mydti(i,j,k) = mydti(i,j,k)/n0/jac(i,k)*cn0s(ns)
+              mydt(i,j,k) = mydt(i,j,k)/n0/jac(i,k)*cn0s(ns)
            enddo
         enddo
      enddo
 
-     do i = 0,im
-        do j = 0,jm
-           do k = 0,1
-              mydti(i,j,k) = (mydti(i,j,k)-gt0i(i)*den(ns,i,j,k))/gn0s(1,i)
-           end do
-        end do
-     end do
-     call MPI_ALLREDUCE(den(ns,0:im,0:jm,0:1),  &
-          dti(ns,0:im,0:jm,0:1),             &
-          (imx+1)*(jmx+1)*2,MPI_REAL8,       &
-          MPI_SUM,GRID_COMM,ierr)
+     call zon(mydt,mydtz)
+     call zon(den(ns,0:imx,0:jmx,0:1),mydnz(0:imx))
+     call MPI_ALLREDUCE(mydtz,  &
+       dtz,             &
+       imx,MPI_REAL8,       &
+       MPI_SUM,GRID_COMM,ierr)
+     call MPI_ALLREDUCE(mydnz,  &
+       dnz,             &
+       imx,MPI_REAL8,       &
+       MPI_SUM,GRID_COMM,ierr)
 
+     do i = 0,im
+        dtiz(ns,i) = (dtz(i)-gt0s(ns,i)*dnz(i))/gn0s(ns,i)
+     end do
+
+     !diagnostic arrays rarely need to be done every step, should be done prior to it is written out
 
      do i=0,im
         do j=0,jm
@@ -1304,16 +1425,36 @@ subroutine grid1(ip,n)
   upar(:,:,:) = 0.
   mydene = 0.
   myupar = 0.
+  mydt = 0.
   if(idg.eq.1)write(*,*)'enter electron grid1'
+
+!$omp parallel do &
+!$omp private(i,j,k,wght,vpar,xt,yt,wx0,wx1,wy0,wy1,wz0,wz1,aparp) &
+!$omp reduction(+:mydene,myupar,mydt)
   do m=1,mme
+     r=x3e(m)-0.5*lx+lr0
+
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+     bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
+     b=1.-tor+tor*bfldp
+     vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)
+
      dv=(dx*dy*dz)
      wght=w3e(m)/dv
-     vpar = u3e(m) !linearly correct
-     !         if(abs(vpar/vte).gt.vcut)wght = 0.
 
      xt=x3e(m)
      yt=y3e(m)
-
      i=int(xt/dx)
      j=int(yt/dy)
      k=0 !int(z3e(m)/dz)-gclr*kcnt
@@ -1324,6 +1465,12 @@ subroutine grid1(ip,n)
      wy1=1.-wy0
      wz0=float(gclr*kcnt+k+1)-z3e(m)/dz
      wz1=1.-wz0
+     aparp = w000(m)*apar(i,j,k) + w100(m)*apar(i+1,j,k)  &
+          + w010(m)*apar(i,j+1,k) + w110(m)*apar(i+1,j+1,k) + &
+          w001(m)*apar(i,j,k+1) + w101(m)*apar(i+1,j,k+1) +   &
+          w011(m)*apar(i,j+1,k+1) + w111(m)*apar(i+1,j+1,k+1)
+
+     vpar = u3e(m)-qel/emass*aparp*ipara
 
      mydene(i,j,k)      =mydene(i,j,k)+wght*w000(m)
      mydene(i+1,j,k)    =mydene(i+1,j,k)+wght*w100(m)
@@ -1343,11 +1490,23 @@ subroutine grid1(ip,n)
      myupar(i,j+1,k+1)  =myupar(i,j+1,k+1)+wght*vpar*w011(m)
      myupar(i+1,j+1,k+1)=myupar(i+1,j+1,k+1)+wght*vpar*w111(m)
 
-  enddo
+     dum = 2./3.*vfac
+     mydt(i,j,k)      =mydt(i,j,k)+wght*dum*w000(m)
+     mydt(i+1,j,k)    =mydt(i+1,j,k)+wght*dum*w100(m)
+     mydt(i,j+1,k)    =mydt(i,j+1,k)+wght*dum*w010(m)
+     mydt(i+1,j+1,k)  =mydt(i+1,j+1,k)+wght*dum*w110(m)
+     mydt(i,j,k+1)    =mydt(i,j,k+1)+wght*dum*w001(m)
+     mydt(i+1,j,k+1)  =mydt(i+1,j,k+1)+wght*dum*w101(m)
+     mydt(i,j+1,k+1)  =mydt(i,j+1,k+1)+wght*dum*w011(m)
+     mydt(i+1,j+1,k+1)=mydt(i+1,j+1,k+1)+wght*dum*w111(m)
+enddo
+!$end omp parallel do
+
   if(idg.eq.1)write(*,*)'pass electron grid1'
   !   enforce periodicity
   call enforce(mydene(:,:,:))
   call enforce(myupar(:,:,:))
+  call enforce(mydt(:,:,:))
   !      call filter(mydene(:,:,:))
   !      call filter(myupar(:,:,:))
 
@@ -1356,19 +1515,35 @@ subroutine grid1(ip,n)
         do  k=0,mykm
            dene(i,j,k)= mydene(i,j,k)/n0e/jac(i,k)*cn0e*ifluid
            upar(i,j,k) = myupar(i,j,k)/n0e/jac(i,k)*cn0e*ifluid
+           mydt(i,j,k) = mydt(i,j,k)/n0e/jac(i,k)*cn0e*ifluid           
         end do
      end do
   end do
 999 continue
 
-  call MPI_ALLREDUCE(dene(0:im,0:jm,0:1),  &
-       delte(0:im,0:jm,0:1),             &
-       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
+!  call MPI_ALLREDUCE(dene(0:im,0:jm,0:1),  &
+!       delte(0:im,0:jm,0:1),             &
+!       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
+!       MPI_SUM,GRID_COMM,ierr)
+!  call MPI_ALLREDUCE(upar(0:im,0:jm,0:1),  &
+!       upart(0:im,0:jm,0:1),             &
+!       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
+!       MPI_SUM,GRID_COMM,ierr)
+
+  call zon(mydt,mydtz)
+  call zon(dene(0:imx,0:jmx,0:1),mydnz(0:imx))
+  call MPI_ALLREDUCE(mydtz,  &
+       dtz,             &
+       imx,MPI_REAL8,       &
        MPI_SUM,GRID_COMM,ierr)
-  call MPI_ALLREDUCE(upar(0:im,0:jm,0:1),  &
-       upart(0:im,0:jm,0:1),             &
-       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
+  call MPI_ALLREDUCE(mydnz,  &
+       dnz,             &
+       imx,MPI_REAL8,       &
        MPI_SUM,GRID_COMM,ierr)
+
+  do i = 0,im
+     dtez(i) = (dtz(i)-gt0e(i)*dnz(i))/gn0e(i)
+  end do
 
   do i = 0,im
      do j = 0,jm
@@ -1388,63 +1563,6 @@ subroutine grid1(ip,n)
 
   !      return
 end subroutine grid1
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-subroutine modes2(u,modehis,n)
-
-  !     calculate mode histories. calculate modes for u at timestep n
-  !     and store in modehis(mode,n).
-
-  use gem_com
-  use gem_equil
-  use gem_fft_wrapper
-  implicit none
-  !     
-  real :: u(0:imx,0:jmx,0:1)
-  COMPLEX :: modehis(modemx,0:nmx)
-  COMPLEX :: modebuf
-  INTEGER :: n,i,j,k,l,m,ii
-
-  INTEGER :: mode,jj,thek,oproc,ifirst
-
-  !     
-
-  if(n.eq.0) return
-
-  do mode=1,modem
-     oproc=int(nmode(mode)/kcnt*ntube)
-
-     if (MyId.eq.oproc) then
-        thek=0
-        do j=0,jm-1
-           do i=0,im-1
-              tmpx(i)=u(i,j,thek)
-           enddo
-
-           !     FT in x....
-           call ccfft('x',1,imx,1.0,tmpx,coefx,workx,0)
-           ii=lmode(mode) !+1
-           if(lmode(mode).lt.0) write(*,*) 'lmode < 0, error'
-           tmpy(j)=tmpx(ii)/float(im)
-        enddo
-
-        !     FT in y....
-        call ccfft('y',1,jmx,1.0,tmpy,coefy,worky,0)
-        jj=mmode(mode)  !+1
-        if(mmode(mode).lt.0) write(*,*) 'mmode < 0, error'
-        modebuf=tmpy(jj)/float(jm)
-
-     endif
-
-     call MPI_BCAST(modebuf,1,MPI_DOUBLE_COMPLEX,oproc, &
-          MPI_COMM_WORLD,ierr)
-     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-     !         write(*,*)myid,modebuf
-     modehis(mode,n)=modebuf
-  enddo
-  !     
-  !      return
-end subroutine modes2
 
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -1661,10 +1779,6 @@ subroutine gkps(nstep,ip)
   real,DIMENSION(1:5) :: b1,b2,ter
   real :: kx1,kx2,ky
   real,dimension(:),allocatable :: akx,aky
-  real,dimension(:,:,:,:,:),allocatable:: gamb1,gamb2
-  complex,dimension(:,:,:,:),allocatable :: mx
-  integer,dimension(:,:,:,:),allocatable :: ipiv
-  real,dimension(:,:,:),allocatable :: formphi,formfe
   real :: sgnx,sgny,sz,myfe
   INTEGER :: i,i1,j,j1,k,k1,l,m,n,ifirst,nstep,ip,INFO
   INTEGER :: l1,m1,myk,myj,ix,ikx
@@ -1680,157 +1794,8 @@ subroutine gkps(nstep,ip)
   character(len=70) fname
   character(len=5) holdmyid
 
-  save formphi,formfe,ifirst,akx,aky,mx,gamb1,gamb2,ipiv
+  save ifirst,akx,aky
   if(idg==1)write(*,*)'enter gkps'
-
-  write(holdmyid,'(I5.5)') MyId
-  fname='./matrix/'//'mx_phi_'//holdmyid
-  !     form factors....
-  if (ifirst.ne.-99) then
-     allocate(akx(0:imx-1),aky(0:jcnt-1), &
-          gamb1(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1), &
-          gamb2(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1))
-     allocate(mx(imx-1,imx-1,0:jcnt-1,0:1),formphi(0:imx-1,0:jcnt-1,0:1))
-     allocate(formfe(0:imx-1,0:jcnt-1,0:1),ipiv(imx-1,imx-1,0:jcnt-1,0:1))
-
-     if(iget.eq.1) then
-        open(10000+MyId,file=fname,form='unformatted',status='old')
-        read(10000+MyId)mx,ipiv
-        close(10000+myid)
-        goto 200
-     end if
-
-     do l=0,im-1
-        do m=0,jcnt-1
-           j = tclr*jcnt+m
-           do i=0,im-1 
-              r = lr0-lx/2+i*dx
-              i1 = int((r-rin)/dr)
-              i1 = min(i1,nr-1)
-              wx0 = (rin+(i1+1)*dr-r)/dr
-              wx1 = 1.-wx0
-              do ns = 1, nsm
-                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
-              enddo
-              do n = 0,1
-                 k = gclr*kcnt+n
-                 k1 = int(k*dz/delz)
-                 k1 = min(k1,ntheta-1)
-                 wz0 = ((k1+1)*delz-dz*k)/delz
-                 wz1 = 1-wz0
-                 th = wz0*thfnz(k1)+wz1*thfnz(k1+1)
-                 k = int((th+pi)/dth)
-                 k = min(k,ntheta-1)
-                 wz0 = (-pi+(k+1)*dth-th)/dth
-                 wz1 = 1.-wz0
-                 bfldp = wx0*wz0*bfld(i1,k)+wx0*wz1*bfld(i1,k+1) &
-                      +wx1*wz0*bfld(i1+1,k)+wx1*wz1*bfld(i1+1,k+1) 
-                 dydrp = wx0*wz0*dydr(i1,k)+wx0*wz1*dydr(i1,k+1) &
-                      +wx1*wz0*dydr(i1+1,k)+wx1*wz1*dydr(i1+1,k+1) 
-                 qhatp = wx0*wz0*qhat(i1,k)+wx0*wz1*qhat(i1,k+1) &
-                      +wx1*wz0*qhat(i1+1,k)+wx1*wz1*qhat(i1+1,k+1) 
-                 grp = wx0*wz0*gr(i1,k)+wx0*wz1*gr(i1,k+1) &
-                      +wx1*wz0*gr(i1+1,k)+wx1*wz1*gr(i1+1,k+1) 
-                 gthp = wx0*wz0*gth(i1,k)+wx0*wz1*gth(i1,k+1) &
-                      +wx1*wz0*gth(i1+1,k)+wx1*wz1*gth(i1+1,k+1) 
-                 gxdgyp = wx0*wz0*gxdgy(i1,k)+wx0*wz1*gxdgy(i1,k+1) &
-                      +wx1*wz0*gxdgy(i1+1,k)+wx1*wz1*gxdgy(i1+1,k+1) 
-                 grdgtp = wx0*wz0*grdgt(i1,k)+wx0*wz1*grdgt(i1,k+1) &
-                      +wx1*wz0*grdgt(i1+1,k)+wx1*wz1*grdgt(i1+1,k+1) 
-
-                 m1 = mstart+int((float(m)+1.0)/2)
-                 if(m==0)m1=0
-                 sgny = isgnft(m)
-
-                 ky=sgny*2.*pi*float(m1)/ly
-                 kx1=pi*float(l)/lx
-                 kx2=-pi*float(l)/lx
-                 bf=bfldp
-
-                 do ns = 1, nsm
-                    b1(ns)=mims(ns)*(kx1*kx1*grp**2 + &
-                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
-                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
-                         +2*kx1*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
-
-                    b2(ns)=mims(ns)*(kx2*kx2*grp**2 + &
-                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
-                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
-                         +2*kx2*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
-
-                    call srcbes(b1(ns),gam0,gam1)
-                    gamb1(ns,l,m,i,n)=gam0
-                    call srcbes(b2(ns),gam0,gam1)
-                    gamb2(ns,l,m,i,n)=gam0
-                 enddo
-
-                 !   formfactor in gkps
-                 formfe(l,m,n) = 1.-gam0
-                 formphi(l,m,n) = 1./jmx 
-                 if(abs(ky)>kycut)formphi(l,m,n) = 0.
-                 !                    if(abs(ky)==0.)formphi(l,m,n) = 0.
-                 if(m1.ne.mlk.and.onemd==1)formphi(l,m,n) = 0.
-              enddo
-           enddo
-        enddo
-     enddo
-
-     do k = 0,1
-        do j = 0,jcnt-1
-           do i = 1,imx-1
-              r = lr0-lx/2+i*dx
-              i1 = int((r-rin)/dr)
-              i1 = min(i1,nr-1)
-              wx0 = (rin+(i1+1)*dr-r)/dr
-              wx1 = 1.-wx0
-              do ns = 1, nsm
-                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
-              enddo
-              do ix = 1,imx-1
-                 mx(i,ix,j,k) = 0.0
-                 if(i==ix)mx(i,ix,j,k) = fradi*gn0e(i)*cn0e/gt0e(i)
-                 do ikx = 0,imx-1
-                    do ns = 1, nsm
-                       mx(i,ix,j,k) = mx(i,ix,j,k)+q(ns)*sin(ix*ikx*pi/imx)* &
-                            ((1-gamb1(ns,ikx,j,i,k))*exp(IU*ikx*i*pi/imx)- &
-                            (1-gamb2(ns,ikx,j,i,k))*exp(-IU*ikx*i*pi/imx)) &
-                            /ter(ns)*cn0s(ns)*gn0s(ns,i)/(IU*imx)
-                    end do
-                 end do
-              end do
-           end do
-        end do
-     end do
-     do k = 0,1
-        do j = 0,jcnt-1
-           call ZGETRF(imx-1,imx-1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k),INFO )
-        end do
-     end do
-
-     if(iget.eq.0) then
-        open(10000+MyId,file=fname,form='unformatted',status='unknown')
-        write(10000+MyId)mx,ipiv
-        close(10000+myid)
-        goto 200
-     end if
-
-     if(gclr==kmx/2.and.tclr==0.and.nstep==0)then
-        !           write(*,*)'setup in gkps'
-        open(20,file="mx",status='unknown')
-        j = 0
-        k = 0
-        do i = 1,imx-1
-           do ix = 1,imx-1
-              if(abs(i-ix)<40)write(20,10)i,ix,mx(i,ix,j,k),mx(ix,i,j,k)
-           end do
-        end do
-10      format(1x,i5,1x,i5,2(2x,e12.5,2x,e12.5))
-        close(20)
-     end if
-200  ifirst=-99
-  endif
-  if(idg==1)write(*,*)'pass form factors'
-
   !   now do field solve...
 
   !      phi = 0.
@@ -1851,15 +1816,17 @@ subroutine gkps(nstep,ip)
   if(idg==1)write(*,*)'pass first fft'
 
   temp3dxy = 0.
-  do k = 0,1
-     do j = 0,jcnt-1
+
+!$omp parallel do private(k,j,myj)
+  do i = 0,jcnt*2-1
+     k = int(i/jcnt)
+     j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        call ZGETRS('N',imx-1,1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k), &
+        call ZGETRS('N',imx-1,1,mxg(:,:,j,k),imx-1,ipivg(:,:,j,k), &
              sl(:,j,k),imx-1,INFO) 
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
-     end do
   end do
 
   !  from rho(kx,ky) to phi(kx,ky)
@@ -1999,10 +1966,17 @@ subroutine spec(n)
   integer :: i,j,k,l,m,n
   real :: pf,efe,efi,pfi,efc,pfc,efb,pfb,pflxgb,eflxgb,x
   real :: pf_em,efe_em,efi_em,pfi_em,efc_em,pfc_em,efb_em,pfb_em
-  real :: tdum,v(0:imx)
+  real :: tdum,v(0:imx),denz(0:imx)
+  real :: dtmp(0:imx,0:jmx,0:1),titmp(0:imx,0:jmx,0:1),tetmp(0:imx,0:jmx,0:1)
 
-!  call zon(upart+amie*upa0t,v)
-!  call joule
+  call MPI_ALLREDUCE(den(1,0:im,0:jm,0:1),  &
+       dtmp(0:im,0:jm,0:1),             &
+       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
+       MPI_SUM,GRID_COMM,ierr)
+  
+  !  call zon(upart+amie*upa0t,v)
+  !  call joule
+  call zon(dtmp,denz)
 
   eflxgb = xn0e(nr2)*cn0e*t0e(nr2)*sqrt(t0e(nr2)/mimp)*rhoia**2
   pflxgb = eflxgb/t0e(nr2)
@@ -2054,54 +2028,58 @@ subroutine spec(n)
      open(11, file='flux', status='unknown',position='append')
      open(17, file='yyre', status='unknown',position='append')
 
-     write(*,10)i,rmsphi(n),rmsapa(n),pf,efe,pfi,efi,avewi(1,n),&
+     write(*,10)tdum,rmsphi(n),rmsapa(n),pf,efe,pfi,efi,avewi(1,n),avewi(2,n),&
           avewe(n),yyre(1,0),yyim(1,0),yyamp(1,0)
 
-10   format(1x,i6,12(2x,e10.3))
+10   format(1x,f10.1,12(2x,e10.3))
 11   format(6x,5(2x,e12.5))
-12   format(1x,i6,12(2x,e12.5))
-13   format(1x,i6,4(2x,e10.3),2x,i7,2x,i7)
-15   format(1x,i6,8(2x,e10.3))
+12   format(1x,f10.1,12(2x,e12.5))
+13   format(1x,f10.1,4(2x,e10.3),2x,i7,2x,i7)
+15   format(1x,f10.1,8(2x,e10.3))
 
-     write(9,10)i,rmsphi(n),rmsapa(n),pf,efe,pfi,efi,avewi(1,n),&
+     write(9,10)tdum,rmsphi(n),rmsapa(n),pf,efe,pfi,efi,avewi(1,n),avewi(2,n),&
           avewe(n),yyre(1,0),yyim(1,0),yyamp(1,0)
 
-     write(11,12)i,pf/pflxgb,pfi/pflxgb,pfc/pflxgb,efe/eflxgb,efi/eflxgb,&
+     write(11,12)tdum,pf/pflxgb,pfi/pflxgb,pfc/pflxgb,efe/eflxgb,efi/eflxgb,&
           efc/eflxgb,pf_em/pflxgb,pfi_em/pflxgb,pfc_em/pflxgb,efe_em/eflxgb,&
           efi_em/eflxgb,efc_em/eflxgb
 
-     write(17,12)i,yyre(1,0),yyre(1,1),yyre(1,2),yyre(1,3),yyre(1,4)
+     write(17,12)tdum,yyre(1,0),yyre(1,1),yyre(1,2),yyre(1,3),yyre(1,4)
      close(9)
      close(11)
      close(17)
   end if
 
-  return
+!  return
   if(gclr==kmx/2 .and. tclr==0)then
-     open(22, file='yyre2', status='unknown',position='append')
-     open(23, file='mdhis', status='unknown',position='append')
-     open(24, file='mdhisa', status='unknown',position='append')
-     open(25, file='stress', status='unknown',position='append')
+!     open(22, file='yyre2', status='unknown',position='append')
+!     open(23, file='mdhis', status='unknown',position='append')
+!     open(24, file='mdhisa', status='unknown',position='append')
+!     open(25, file='stress', status='unknown',position='append')
+     open(26, file='zprof', status='unknown',position='append')
+     
+!     write(23,16)tdum,mdhis(0),mdhis(1),mdhis(2),mdhis(3),mdhis(4),&
+!          mdhisa(0),mdhisa(1),mdhisa(2),mdhisa(3),mdhisa(4)
+!     write(24,16)tdum,mdhisb(0),mdhisb(1),mdhisc(0),mdhisc(1),&
+!          mdhisd(0),mdhisd(1)
+!     write(25,17)tdum,(v(i),i = 0,imx-1)
+     write(26,17)tdum,(denz(i),i = 0,imx-1)
+     write(26,17)tdum,(dtiz(1,i),i = 0,imx-1)
 
-     write(23,16)tdum,mdhis(0),mdhis(1),mdhis(2),mdhis(3),mdhis(4),&
-          mdhisa(0),mdhisa(1),mdhisa(2),mdhisa(3),mdhisa(4)
-     write(24,16)tdum,mdhisb(0),mdhisb(1),mdhisc(0),mdhisc(1),&
-          mdhisd(0),mdhisd(1)
-     write(25,17)tdum,(v(i),i = 0,imx-1)
-
-     do  i = 0,6
-        write(22,14)tdum,i,real(phihis(i,0)),(real(phihis(i,j)), &
-             aimag(phihis(i,j)), j = 1,jcnt-2,2)
-        write(22,14)tdum,i,real(aparhis(i,0)),(real(aparhis(i,j)), &
-             aimag(aparhis(i,j)), j = 1,jcnt-2,2)
-     end do
-     close(22)
-     close(23)
-     close(24)
-     close(25)
+!     do  i = 0,6
+!        write(22,14)tdum,i,real(phihis(i,0)),(real(phihis(i,j)), &
+!             aimag(phihis(i,j)), j = 1,jcnt-2,2)
+!        write(22,14)tdum,i,real(aparhis(i,0)),(real(aparhis(i,j)), &
+!             aimag(aparhis(i,j)), j = 1,jcnt-2,2)
+!     end do
+!     close(22)
+!     close(23)
+!     close(24)
+!     close(25)
+     close(26)
 14   format(1x,f10.1,1x,i2,10(2x,e12.5))
 16   format(1x,f10.1,1x,10(2x,e12.5))
-17   format(1x,f10.1,256(2x,e12.5))
+17   format(1x,f10.1,1024(2x,e12.5))
   end if
 
 end subroutine spec
@@ -2115,12 +2093,7 @@ subroutine ezamp(nstep,ip)
   implicit none
   real :: b,b2,gam0,gam1,th,delyz,bf,rkper,r,qr,shat
   real :: kx,ky
-  real,dimension(:),allocatable :: akx,aky
-  complex,dimension(:,:,:,:),allocatable:: nab1,nab2
-  complex,dimension(:,:,:,:),allocatable :: mx
-  real,dimension(:,:,:),allocatable :: formapa
   real :: sgnx,sgny,sz,myfe
-  integer,dimension(:,:,:,:),allocatable :: ipiv
   INTEGER :: i,i1,j,j1,k,k1,l,m,n,ifirst,nstep,ip,INFO
   INTEGER :: l1,m1,myk,myj,ix,ikx,iext
   COMPLEX :: temp3dxy(0:imx-1,0:jmx-1,0:1),v(0:imx-1,0:jcnt-1,0:1)
@@ -2132,128 +2105,6 @@ subroutine ezamp(nstep,ip)
   character(len=70) fname
   character(len=5) holdmyid
 
-  save formapa,ifirst,akx,aky,mx,IPIV
-
-  write(holdmyid,'(I5.5)') MyId
-  fname='./matrix/'//'mx_apa_'//holdmyid
-  if (ifirst.ne.-99) then
-     allocate(akx(0:imx-1),aky(0:jcnt-1),nab1(0:imx-1,0:jcnt-1,0:imx-1,0:1))
-     allocate(nab2(0:imx-1,0:jcnt-1,0:imx-1,0:1),ipiv(imx-1,imx-1,0:jcnt-1,0:1))
-     allocate(mx(imx-1,imx-1,0:jcnt-1,0:1),formapa(0:imx-1,0:jcnt-1,0:1))
-
-     if(iget.eq.1) then
-        open(20000+MyId,file=fname,form='unformatted',status='old')
-        read(20000+MyId)mx,ipiv
-        close(20000+myid)
-        goto 200
-     end if
-
-     do l=0,im-1
-        do m=0,jcnt-1
-           j = tclr*jcnt+m
-           do i=0,im-1
-              r = lr0-lx/2+i*dx
-              do n = 0,1
-                 k = gclr*kcnt+n
-                 k1 = int(dz*k/delz)
-                 k1 = min(k1,ntheta-1)
-                 wz0 = ((k1+1)*delz-dz*k)/delz
-                 wz1 = 1-wz0
-                 th = wz0*thfnz(k1)+wz1*thfnz(k1+1)
-                 i1 = int((r-rin)/dr)
-                 i1 = min(i1,nr-1)
-                 wx0 = (rin+(i1+1)*dr-r)/dr
-                 wx1 = 1.-wx0
-                 k1 = int((th+pi)/dth)
-                 k1 = min(k1,ntheta-1)
-                 wz0 = (-pi+(k1+1)*dth-th)/dth
-                 wz1 = 1.-wz0
-                 bfldp = wx0*wz0*bfld(i1,k1)+wx0*wz1*bfld(i1,k1+1) &
-                      +wx1*wz0*bfld(i1+1,k1)+wx1*wz1*bfld(i1+1,k1+1) 
-                 dydrp = wx0*wz0*dydr(i1,k1)+wx0*wz1*dydr(i1,k1+1) &
-                      +wx1*wz0*dydr(i1+1,k1)+wx1*wz1*dydr(i1+1,k1+1) 
-                 qhatp = wx0*wz0*qhat(i1,k1)+wx0*wz1*qhat(i1,k1+1) &
-                      +wx1*wz0*qhat(i1+1,k1)+wx1*wz1*qhat(i1+1,k1+1) 
-                 grp = wx0*wz0*gr(i1,k1)+wx0*wz1*gr(i1,k1+1) &
-                      +wx1*wz0*gr(i1+1,k1)+wx1*wz1*gr(i1+1,k1+1) 
-                 gthp = wx0*wz0*gth(i1,k1)+wx0*wz1*gth(i1,k1+1) &
-                      +wx1*wz0*gth(i1+1,k1)+wx1*wz1*gth(i1+1,k1+1) 
-                 gxdgyp = wx0*wz0*gxdgy(i1,k1)+wx0*wz1*gxdgy(i1,k1+1) &
-                      +wx1*wz0*gxdgy(i1+1,k1)+wx1*wz1*gxdgy(i1+1,k1+1) 
-                 grdgtp = wx0*wz0*grdgt(i1,k1)+wx0*wz1*grdgt(i1,k1+1) &
-                      +wx1*wz0*grdgt(i1+1,k1)+wx1*wz1*grdgt(i1+1,k1+1) 
-
-                 m1 = mstart+int((float(m)+1.0)/2)   
-                 if(m==0)m1=0       
-                 sgny = isgnft(m)
-                 ky=sgny*2.*pi*float(m1)/ly
-                 kx=pi*float(l)/lx
-                 akx(l) = kx
-                 aky(m) = ky
-                 bf=bfldp
-                 b=mims(1)*(kx*kx*grp**2 + &
-                      ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
-                      +2*dydrp*lr0/q0*qhatp*grdgtp) &
-                      +2*kx*ky*gxdgyp)/bf/bf
-
-                 nab1(l,m,i,n) = kx**2*grp**2+ky**2*  &
-                      (dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
-                      +2*dydrp*lr0/q0*qhatp*grdgtp)
-
-                 nab2(l,m,i,n) = -IU*ky*kx*2*gxdgyp
-                 !   formfactor in ezamp
-                 formapa(l,m,n) = beta/jmx 
-                 if(abs(ky)>kycut)formapa(l,m,n) = 0.
-                 if(m1.ne.mlk.and.onemd==1)formapa(l,m,n) = 0.
-              enddo
-           enddo
-        enddo
-     enddo
-
-     do k = 0,1
-        do j = 0,jcnt-1
-           do i = 1,imx-1
-              do ix = 1,imx-1
-                 mx(i,ix,j,k) = 0.
-                 if(i==ix)mx(i,ix,j,k) = beta*(amie*gn0e(i)*cn0e+q(1)*q(1)/mims(1)*gn0s(1,i)*cn0s(1)*isiap)
-                 do ikx = 1,imx-1
-                    mx(i,ix,j,k) = mx(i,ix,j,k) &
-                         +nab1(ikx,j,i,k) &
-                         *sin(ix*ikx*pi/imx)*sin(i*ikx*pi/imx)*2.0/imx &
-                         +nab2(ikx,j,i,k) &
-                         *sin(ix*ikx*pi/imx)*cos(i*ikx*pi/imx)*2.0/imx
-                 end do
-              end do
-           end do
-        end do
-     end do
-     if(gclr==1.and.tclr==0.and.nstep==0)then
-        open(20,file="mxamp",status='unknown')
-        j = 0
-        k = 0
-        do i = 1,imx-1
-           do ix = 1,imx-1
-              write(20,10)i,ix,mx(i,ix,j,k),mx(ix,i,j,k)
-           end do
-        end do
-10      format(1x,i5,1x,i5,2(2x,e12.5,2x,e12.5))
-        close(20)
-     end if
-     do k = 0,1
-        do j = 0,jcnt-1
-           call ZGETRF( imx-1,imx-1,mx(:,:,j,k),imx-1,IPIV(:,:,j,k), INFO )
-        end do
-     end do
-
-     if(iget.eq.0) then
-        open(20000+MyId,file=fname,form='unformatted',status='unknown')
-        write(20000+MyId)mx,ipiv
-        close(20000+myid)
-        goto 200
-     end if
-
-200  ifirst=-99
-  endif
 
   !   now do field solve...
 
@@ -2273,15 +2124,17 @@ subroutine ezamp(nstep,ip)
   call dcmpy(u(0:imx-1,0:jmx-1,0:1),v)
 
   temp3dxy = 0.
-  do k = 0,1
-     do j = 0,jcnt-1
+
+!$omp parallel do private(k,j,myj)
+  do i = 0,jcnt*2-1
+     k = int(i/jcnt)
+     j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        call ZGETRS('N',imx-1,1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k), &
+        call ZGETRS('N',imx-1,1,mxa(:,:,j,k),imx-1,ipiva(:,:,j,k), &
              sl(:,j,k),imx-1,INFO) 
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
-     end do
   end do
 
   !  from rho(kx,ky) to phi(kx,ky)
@@ -2589,10 +2442,6 @@ end subroutine filter
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 subroutine yveck(u,n)
-
-  !     calculate mode histories. calculate modes for u at timestep n
-  !     and store in modehis(mode,n).
-
   use gem_com
   use gem_equil
   use gem_fft_wrapper
@@ -2672,10 +2521,6 @@ subroutine yveck(u,n)
 end subroutine yveck
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine yveck1(u,n)
-
-  !     calculate mode histories. calculate modes for u at timestep n
-  !     and store in modehis(mode,n).
-
   use gem_com
   use gem_equil
   use gem_fft_wrapper
@@ -2819,6 +2664,7 @@ subroutine loadi(ns)
      i = int((r-rin)/dr)
      k = int((pi+th)/dth)
      jacp = jacob(i,k)
+
      if(ran2(iseed)<(0.5*jacp/jacmax))then
         m = m+1
         if(m>mm(ns))goto 170
@@ -2832,7 +2678,6 @@ subroutine loadi(ns)
         z2(ns,m)=min(z2(ns,m),lz-1e-8)
 
         call parperp(vpar,vperp2,m,pi,cnt,MyId)
-        !   normalizations will be done in following loop...
 
         r=x2(ns,m)-0.5*lx+lr0
         cost=cos(th)
@@ -2845,6 +2690,7 @@ subroutine loadi(ns)
         bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
              +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
         psp = wx0*psi(i)+wx1*psi(i+1)
+        fp = wx0*f(i)+wx1*f(i+1)        
         ter = wx0*t0s(ns,i)+wx1*t0s(ns,i+1)
         if(ildu==1)ter = tgis(ns)
         b=1.-tor+tor*bfldp
@@ -2852,15 +2698,18 @@ subroutine loadi(ns)
         u2(ns,m)=vpar/sqrt(mims(ns)/ter)
         mu(ns,m)=0.5*vperp2/b*ter
         eki(ns,m) = mu(ns,m)*b+0.5*mims(ns)*u2(ns,m)**2
-        pzi(ns,m) = mims(ns)*u2(ns,m)/b-q(ns)*psp/br0
+        pzi(ns,m) = mims(ns)*u2(ns,m)/b*fp/br0-q(ns)*psp/br0
         z0i(ns,m) = z2(ns,m)
         xii(ns,m) = x2(ns,m)
         u0i(ns,m) = u2(ns,m)
         myavgv=myavgv+u2(ns,m)
 
         !    LINEAR: perturb w(ns,m) to get linear growth...
-        !         w2(ns,m)=2.*amp*(revers(MyId*cnt+m,13)-0.5) !(ran2(iseed) - 0.5 )
-        w2(ns,m)=2.*amp*sin(pi2/ly*y2(ns,m))*exp(-(z2(ns,m)-lz/2)**2/(lz/8)**2)*exp(-(x2(ns,m)-0.4*lx)**2/(lx/8)**2)
+!        w2(ns,m)=2.*amp*(revers(MyId*cnt+m,13)-0.5) !(ran2(iseed) - 0.5 )
+        w2(ns,m)=2.*amp*sin(4*pi2/ly*y2(ns,m))*exp(-(z2(ns,m)-lz/2)**2/(lz/8)**2)*exp(-(x2(ns,m)-0.5*lx)**2/(lx/8)**2) &
+                +2.*amp*sin(3*pi2/ly*y2(ns,m))*exp(-(z2(ns,m)-lz/2)**2/(lz/8)**2)*exp(-(x2(ns,m)-0.5*lx)**2/(lx/8)**2) &
+                +2.*amp*sin(5*pi2/ly*y2(ns,m))*exp(-(z2(ns,m)-lz/2)**2/(lz/8)**2)*exp(-(x2(ns,m)-0.5*lx)**2/(lx/8)**2) &
+                +2.*amp*sin(6*pi2/ly*y2(ns,m))*exp(-(z2(ns,m)-lz/2)**2/(lz/8)**2)*exp(-(x2(ns,m)-0.5*lx)**2/(lx/8)**2)
         if(ns==2)w2(ns,m) = 0.
         myavgw=myavgw+w2(ns,m)
      end if
@@ -2941,11 +2790,20 @@ subroutine enforce(u)
   real :: rbfr(0:imx,0:jmx)
   real :: dum,dum1,dely,th,wy1,ydum
 
-  do j=0,jm-1
-     do k=0,mykm
-        u(0,j,k) = u(0,j,k)+u(im,j,k)
+  if(iperi==1)then
+     do j=0,jm-1
+        do k=0,mykm
+           u(0,j,k) = u(0,j,k)+u(im,j,k)
+        enddo
      enddo
-  enddo
+  end if
+  if(iperi==0)then
+     do j=0,jm-1
+        do k=0,mykm
+           u(0,j,k) = 0.
+        enddo
+     enddo
+  end if
 
   do i=0,im-1 
      do k=0,mykm
@@ -3007,11 +2865,21 @@ subroutine enfxy(u)
   enddo
 
   !   bc for x
-  do k=0,mykm
-     do j=0,jm
-        u(im,j,k)=u(0,j,k)
+  if(iperi==1)then
+     do k=0,mykm
+        do j=0,jm
+           u(im,j,k)=u(0,j,k)
+        enddo
      enddo
-  enddo
+  end if
+  if(iperi==0)then
+     do k=0,mykm
+        do j=0,jm
+           u(0,j,k)=u(1,j,k)           
+           u(im,j,k)=u(im-1,j,k)
+        enddo
+     enddo
+  end if
 
   !      return
 end subroutine enfxy
@@ -3045,12 +2913,21 @@ subroutine gradu(u,ux,uy)
   enddo
 
   ! do boundary i=0
-  do j=0,jm-1
-     do k=0,mykm
-        ul=u(im-1,j,k)
-        ux(0,j,k)=(u(1,j,k)-ul)/(2.*dx)
+  if(iperi==1)then
+     do j=0,jm-1
+        do k=0,mykm
+           ul=u(im-1,j,k)
+           ux(0,j,k)=(u(1,j,k)-ul)/(2.*dx)
+        enddo
      enddo
-  enddo
+  end if
+  if(iperi==0)then
+     do j=0,jm-1
+        do k=0,mykm
+           ux(0,j,k)=ux(1,j,k)
+        enddo
+     enddo
+  end if
 
   call enfxy(ux)
   call enfxy(uy)
@@ -3168,20 +3045,29 @@ subroutine pint
   INTEGER :: m,i,j,k,l,n,ipover,ieover
   INTEGER :: np_old,np_new
   real :: vfac,kap,kapnp,kaptp,sz,vpar,ppar,vpdum,pidum,xnp
-  real :: b,th,r,enerb,cost,sint,qr,laps,ter
-  real :: xt,xs,yt,zt,xdot,ydot,zdot,pzdot,edot,pzd0,pzd1,vp0
+  real :: b,th,r,enerb,cost,sint,qr,laps,ter,dtp
+  real :: xt,xs,yt,zt,xdot,ydot,zdot,pzdot,edot,pzd0,pzd1,vp0,xdt0,ydt0,xdtes,ydtes,xdtem,ydtem
   real :: wx0,wx1,wy0,wy1,wz0,wz1
-  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
+  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp,nue0p,zeffp
   real :: grp,gxdgyp,psp,pzp,psip2p,bdcrvbp,curvbzp,dipdrp,bstar
   real :: myavptch,myaven
   integer :: myopz,myoen
   real :: x000,x001,x010,x011,x100,x101,x110,x111
+  real :: fdum,gdum,fesrcp,dnesrcp,avwexepsp,fovg,avwexezp,dnesrczp
 
   myopz = 0
   myoen = 0
   myavptch = 0.
   myaven = 0.
-  pidum = 1./(pi*2)**1.5*(vwidthe)**3
+
+!$omp parallel do default(shared) &
+!$omp private(i,j,k,r,th,wx0,wx1,wy0,wy1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp,grdgtp) &
+!$omp private(fp,jfnp,psipp,psp,ter,kaptp,kapnp,xnp,vncp,psip2p,dipdrp,nue0p,zeffp,b,pzp,xt,yt,x000,x001,x010,x011,x100,x101,x110,x111) &
+!$omp private(exp1,eyp,ezp,delbxp,delbyp,dgdtp,dpdzp,dadzp,aparp,phip,vfac,vp0,kap,ppar,vpar,bstar,enerb,dum2,vxdum,xdot,ydot,zdot) &
+!$omp private(pzd0,pzd1,pzdot,vpdum,edot,eps,x,h_x,h_coll,hee,nue,dum1,dum,ieover,ipover,laps,qr) &
+!$omp private(xdt0,ydt0,xdtes,ydtes,xdtem,ydtem) &
+!$omp private(fdum,gdum,fesrcp,dnesrcp,avwexepsp,fovg,dtp,avwexezp,dnesrczp) &  
+!$omp reduction(+: myopz,myoen,myavptch,myaven)
   do m=1,mme
      r=x2e(m)-0.5*lx+lr0
 
@@ -3232,9 +3118,11 @@ subroutine pint
      xnp = wx0*xn0e(i)+wx1*xn0e(i+1)        
      vncp = wx0*phincp(i)+wx1*phincp(i+1)        
      psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
-     dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
+     dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)
+     nue0p = wx0*nue0(i)+wx1*nue0(i+1)
+     zeffp = wx0*zeff(i)+wx1*zeff(i+1)        
      b=1.-tor+tor*bfldp
-     pzp = emass*u2e(m)/b+psp/br0
+     pzp = emass*u2e(m)/b*fp/br0+psp/br0 !here P_zeta value is a good value, after a complete time step
 
      xt = x2e(m)
      yt = y2e(m)
@@ -3251,15 +3139,19 @@ subroutine pint
      bstar = b*(1+emass*vpar/(qel*b)*bdcrvbp)
      enerb=(mue2(m)+emass*vpar*vpar/b)/qel*b/bstar*tor
      dum2 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
-     vxdum = (eyp/b+vpar/b*delbxp*iflut)*dum2
-     xdot = vxdum*nonline  &
-          -tor*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
-     ydot = (-exp1/b+vpar/b*delbyp*iflut)*dum2*nonline &
-          +tor*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
+     vxdum = (eyp/b*iexb+vpar/b*delbxp*iflut)*dum2
+     xdt0 = -tor*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
+     xdtes = eyp/b*dum2
+     xdtem = vpar/b*delbxp*dum2
+     xdot = vxdum*nonline + xdt0
+     ydt0 = tor*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
           (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0 &
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -emass*vpar**2/(qel*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
           -dipdrp/radiusp*emass*vpar**2/(qel*bstar*b)*grcgtp*lr0/q0*qhatp  
+     ydtes = -exp1/b*dum2 
+     ydtem = vpar/b*delbyp*dum2
+     ydot = (-exp1/b*iexb+vpar/b*delbyp*iflut)*dum2*nonline + ydt0
 
      zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
           +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
@@ -3269,14 +3161,17 @@ subroutine pint
      pzd0 = tor*(-mue2(m)/emass/radiusp/bfldp*psipp*dbdtp*grcgtp)*b/bstar &
           +mue2(m)*vpar/(qel*bstar*b)*dipdrp/radiusp*dbdtp*grcgtp
      pzd1 = qel/emass*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
-          +qel/emass*(-xdot*delbyp+ydot*delbxp+zdot*dadzp) 
+          +qel/emass*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)    &
+          +1/emass*(-delbyp*eyp-delbxp*exp1)* 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      pzdot = pzd0+pzd1*ipara
 
-     vpdum = vpar
-     edot = qel*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp) &
-          +qel*pzdot*aparp &
-          +qel*vpdum*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)   &
-          -qel*vpar*delbxp*vp0
+     vpdum = ppar
+     edot = qel*((xdt0+xdtem*nonline)*exp1+(ydt0+ydtem*nonline-vp0)*eyp+zdot*ezp) &
+          +qel*pzd0*aparp &
+          +qel*vpdum*(-(xdt0+xdtes*nonline)*delbyp+(ydt0+ydtes*nonline)*delbxp+zdot*dadzp)   &
+          -qel*vpar*delbxp*vp0  &
+          +(1./emass*aparp/b*(delbyp*eyp+delbxp*exp1) * 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp  &
+          +aparp/emass*ezp * q0*br0/radiusp/b*psipp*grcgtp/jfnp) *ipara
 
      x3e(m) = x2e(m) + 0.5*dte*xdot
      y3e(m) = y2e(m) + 0.5*dte*ydot
@@ -3291,18 +3186,38 @@ subroutine pint
      !         h_coll = exp(-x*x)/(x*sqrt(pi))+(1.0-1.0/(2.0*x*x))*DERF(x)
      ! collision frequency for experimental profiles
      hee = exp(-x*x)/(x*sqrt(pi))+(1.0-1.0/(2.0*x*x))*erf(x)
-     nue=rneu*(wx0*nue0(i)+wx1*nue0(i+1))*(wx0*zeff(i)+wx1*zeff(i+1)+hee)
+     nue=rneu*nue0p*(zeffp+hee)
      !         dum1 = 0.5*rneu/eps**1.5*(1+h_coll)
-     dum1 = nue/(2*(eps+0.1))**1.5  !*(1+h_coll)
+     dum1 = 0.*nue/(2*(eps+0.1))**1.5  !*(1+h_coll)
      !         if(x<0.3)dum1=0.0
 
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *emass**1.5
+     if(eldu==0)gdum = fdum/xnp
+     if(eldu==1 .and. isunie==0)gdum = 1./(2*pi*tge)**1.5*exp(-vfac/tge) *emass**1.5
+     if(isunie==1)gdum = 1.0/cv
+     i = int(x2e(m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)     
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkre==1)gdum = gmrkre(i,k)
+     fovg = fdum/gdum
+     avwexepsp = avwexeps(i,k)
+     avwexezp = avwexez(i,k)     
+     dnesrcp = dnesrc(i)
+     dnesrczp = dnesrcz(i)     
+     fesrcp = fesrc(i)
+     dtp = dtez(min(int(xt/dx),im-1))
+     
      dum = 1-w2e(m)*nonline*0.
-     if(eldu.eq.1)dum = (tge/ter)**1.5*exp(vfac*(1/tge-1./ter))
      vxdum = (eyp/b+vpdum/b*delbxp)*dum2
      w3e(m)=w2e(m) + 0.5*dte*(  &
-          (vxdum*kap + edot/ter-dum1*ppar*aparp/ter)*xnp     &
-          +isg*(-dgdtp-zdot*dpdzp+xdot*exp1+ydot*eyp)/ter*xnp)*dum
-
+          (vxdum*kap + edot/ter-dum1*ppar*aparp/ter)     &
+          +isg*(-dgdtp-zdot*dpdzp+(xdt0+xdtem*nonline)*exp1+(ydt0+ydtem*nonline)*eyp)/ter)*(fovg-(phip/ter*fovg+aparp*vpar/ter*fovg+w2e(m))*nonline*isonew) &
+          - 0.5*dte*gammah*(avwexepsp-dnesrcp/(fesrcp+1e-8)*fovg)  &
+          - 0.5*dte*ghzon*dnesrczp/(fesrcp+1e-8)*fovg            &
+          - 0.5*dte*gamgtc*(vfac/ter-1.5)*dtp/ter*fovg            &
+          - 0.5*dte*gamtoy*(1.5*sqrt(pi*vfac/ter)-3)*dtp/ter*fovg           
      !         if(x3e(m)>lx .or. x3e(m)<0.)w3e(m) = 0. 
 
      !         go to 333
@@ -3313,7 +3228,10 @@ subroutine pint
         myopz = myopz+1
         ipover = 1
      end if
-     if(abs(vfac-eke(m))>encrit.and.abs(x2e(m)-lx/2)<(lx/2-1))then
+     
+     !if isunie==1, marker control in velocity will be done primarily through the |vpar|>vsphere criterion
+     !In that case, encrit should be large
+     if(abs(vfac-eke(m))>0.5*eke(m).and.abs(x2e(m)-lx/2)<(lx/2-1))then
         myoen = myoen+1
         ieover = 1
         myaven = myaven+eke(m)
@@ -3379,6 +3297,8 @@ subroutine pint
      z3e(m) = min(z3e(m),lz-1.0e-8)
 
   end do
+!$omp end parallel do
+
   call MPI_ALLREDUCE(myopz,nopz,1,MPI_integer, &
        MPI_SUM, MPI_COMM_WORLD,ierr)
   call MPI_ALLREDUCE(myoen,noen,1,MPI_integer, &
@@ -3450,11 +3370,11 @@ subroutine cint(n)
 
   real :: phip,exp1,eyp,ezp,delbxp,delbyp,dgdtp,dpdzp,dadzp,aparp,vncp
   real :: dum,vxdum,dum1,dum2,eps,x,h_x,h_coll,hee,nue
-  INTEGER :: m,i,j,k,l,n,mynowe
+  INTEGER :: m,i,j,k,l,n,mynowe,mynovpar
   INTEGER :: np_old,np_new
   real :: vfac,kap,kapnp,kaptp,sz,vpar,ppar,vpdum,pidum,xnp
-  real :: b,th,r,enerb,cost,sint,qr,laps,ter
-  real :: xt,xs,yt,zt,xdot,ydot,zdot,pzdot,edot,pzd0,pzd1,vp0
+  real :: b,th,r,enerb,cost,sint,qr,laps,ter,dtp
+  real :: xt,xs,yt,zt,xdot,ydot,zdot,pzdot,edot,pzd0,pzd1,vp0,xdt0,ydt0,xdtes,ydtes,xdtem,ydtem
   real :: wx0,wx1,wy0,wy1,wz0,wz1,w3old
   real :: myke,mypfl_es(1:nsubd),mypfl_em(1:nsubd),myptrp
   real :: myefl_es(1:nsubd),myefl_em(1:nsubd),mynos,myavewe
@@ -3462,10 +3382,11 @@ subroutine cint(n)
   real :: efltemp,nostemp
   real :: sbuf(10),rbuf(10)
   real :: mytotn,mytrap,totn,ttrap
-  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
+  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp,nue0p,zeffp
   real :: grp,gxdgyp,psp,pzp,psip2p,bdcrvbp,curvbzp,dipdrp,bstar
   real :: x000,x001,x010,x011,x100,x101,x110,x111
-
+  real :: fdum,gdum,fesrcp,dnesrcp,avwexepsp,fovg,avwexezp,dnesrczp
+  
   sbuf(1:10) = 0.
   rbuf(1:10) = 0.
   myavewe = 0.
@@ -3483,8 +3404,16 @@ subroutine cint(n)
   mytotn = 0.
   mytrap = 0.
   mynowe = 0
+  mynovpar = 0
 
-  pidum = 1./(pi*2)**1.5*(vwidthe)**3
+!$omp parallel do default(shared) &
+!$omp private(i,j,k,r,th,wx0,wx1,wy0,wy1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp,grdgtp) &
+!$omp private(fp,jfnp,psipp,psp,ter,kaptp,kapnp,xnp,vncp,psip2p,dipdrp,nue0p,zeffp,b,pzp,xt,yt,x000,x001,x010,x011,x100,x101,x110,x111) &
+!$omp private(exp1,eyp,ezp,delbxp,delbyp,dgdtp,dpdzp,dadzp,aparp,phip,vfac,vp0,kap,ppar,vpar,bstar,enerb,dum2,vxdum,xdot,ydot,zdot) &
+!$omp private(pzd0,pzd1,pzdot,vpdum,edot,eps,x,h_x,h_coll,hee,nue,dum1,dum,laps,qr,w3old) &
+!$omp private(xdt0,ydt0,xdtes,ydtes,xdtem,ydtem) &  
+!$omp private(fdum,gdum,fesrcp,dnesrcp,avwexepsp,fovg,dtp,avwexezp,dnesrczp) &  
+!$omp reduction(+: myavewe,myke,mypfl_es,mypfl_em,myptrp,myefl_es,myefl_em,mynos,mytotn,mytrap,mynowe)
   do m=1,mme
      r=x3e(m)-0.5*lx+lr0
 
@@ -3535,9 +3464,11 @@ subroutine cint(n)
      xnp = wx0*xn0e(i)+wx1*xn0e(i+1)        
      vncp = wx0*phincp(i)+wx1*phincp(i+1)        
      psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
-     dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
+     dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)
+     nue0p = wx0*nue0(i)+wx1*nue0(i+1)
+     zeffp = wx0*zeff(i)+wx1*zeff(i+1)        
      b=1.-tor+tor*bfldp
-     pzp = emass*u3e(m)/b+psp/br0
+     pzp = emass*u3e(m)/b*fp/br0+psp/br0
 
      xt = x3e(m)
      yt = y3e(m)
@@ -3554,15 +3485,19 @@ subroutine cint(n)
      bstar = b*(1+emass*vpar/(qel*b)*bdcrvbp)
      enerb=(mue3(m)+emass*vpar*vpar/b)/qel*b/bstar*tor
      dum2 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
-     vxdum = (eyp/b+vpar/b*delbxp*iflut)*dum2
-     xdot = vxdum*nonline &
-          -tor*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
-     ydot = (-exp1/b+vpar/b*delbyp*iflut)*dum2*nonline  &
-          +tor*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
+     vxdum = (eyp/b*iexb+vpar/b*delbxp*iflut)*dum2
+     xdt0 = -tor*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
+     xdtes = eyp/b*dum2
+     xdtem = vpar/b*delbxp*dum2
+     xdot = vxdum*nonline + xdt0
+     ydt0 = tor*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
           (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0 &
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -emass*vpar**2/(qel*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
           -dipdrp/radiusp*emass*vpar**2/(qel*bstar*b)*grcgtp*lr0/q0*qhatp  
+     ydtes = -exp1/b*dum2 
+     ydtem = vpar/b*delbyp*dum2
+     ydot = (-exp1/b*iexb+vpar/b*delbyp*iflut)*dum2*nonline + ydt0
 
      zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
           +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
@@ -3572,14 +3507,17 @@ subroutine cint(n)
      pzd0 = tor*(-mue3(m)/emass/radiusp/bfldp*psipp*dbdtp*grcgtp)*b/bstar &
           +mue3(m)*vpar/(qel*bstar*b)*dipdrp/radiusp*dbdtp*grcgtp
      pzd1 = qel/emass*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
-          +qel/emass*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)
+          +qel/emass*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)    &
+          +1/emass*(-delbyp*eyp-delbxp*exp1)* 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      pzdot = pzd0+pzd1*ipara
 
-     vpdum = vpar
-     edot = qel*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp) &
-          +qel*pzdot*aparp  &
-          +qel*vpdum*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)   &
-          -qel*vpar*delbxp*vp0
+     vpdum = ppar
+     edot = qel*((xdt0+xdtem*nonline)*exp1+(ydt0+ydtem*nonline-vp0)*eyp+zdot*ezp) &
+          +qel*pzd0*aparp  &
+          +qel*vpdum*(-(xdt0+xdtes*nonline)*delbyp+(ydt0+ydtes*nonline)*delbxp+zdot*dadzp)   &
+          -qel*vpar*delbxp*vp0 &
+          + (1./emass*aparp/b*(delbyp*eyp+delbxp*exp1) * 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp  &
+          +aparp/emass*ezp * q0*br0/radiusp/b*psipp*grcgtp/jfnp) *ipara
 
      x3e(m) = x2e(m) + dte*xdot
      y3e(m) = y2e(m) + dte*ydot
@@ -3594,31 +3532,66 @@ subroutine cint(n)
      !         h_coll = exp(-x*x)/(x*sqrt(pi))+(1.0-1.0/(2.0*x*x))*DERF(x)
      ! collision frequency for experimental profiles
      hee = exp(-x*x)/(x*sqrt(pi))+(1.0-1.0/(2.0*x*x))*erf(x)
-     nue=rneu*(wx0*nue0(i)+wx1*nue0(i+1))*(wx0*zeff(i)+wx1*zeff(i+1)+hee)
+     nue=rneu*nue0p*(zeffp+hee)
      !         dum1 = 0.5*rneu/eps**1.5*(1+h_coll)
-     dum1 = nue/(2*(eps+0.1))**1.5  !*(1+h_coll)
+     dum1 = 0.*nue/(2*(eps+0.1))**1.5  !*(1+h_coll)
      !         if(x<0.3)dum1=0.0
 
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *emass**1.5
+     if(eldu==0)gdum = fdum/xnp
+     if(eldu==1 .and. isunie==0)gdum = 1./(2*pi*tge)**1.5*exp(-vfac/tge) *emass**1.5
+     if(isunie==1)gdum = 1.0/cv
+     i = int(x3e(m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)     
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkre==1)gdum = gmrkre(i,k)
+     fovg = fdum/gdum
+     avwexepsp = avwexeps(i,k)
+     avwexezp = avwexez(i,k)     
+     dnesrcp = dnesrc(i)
+     dnesrczp = dnesrcz(i)     
+     fesrcp = fesrc(i)
+     dtp = dtez(min(int(xt/dx),im-1))
+     
      dum = 1-w3e(m)*nonline*0.
-     if(eldu.eq.1)dum = (tge/ter)**1.5*exp(vfac*(1/tge-1./ter))
      vxdum = (eyp/b+vpdum/b*delbxp)*dum2
      !             -(2*u3e(m)*aparp+qel/emass*aparp*aparp)/(b*b)/br0*sint
      w3old = w3e(m)
      w3e(m)=w2e(m) + dte*(  &
-          (vxdum*kap + edot/ter  -dum1*ppar*aparp/ter)*xnp    & 
-          +isg*(-dgdtp-zdot*dpdzp+xdot*exp1+ydot*eyp)/ter*xnp)*dum
-
-     if(abs(w3e(m)).gt.4.0.and.nonline==1)then
+          (vxdum*kap + edot/ter  -dum1*ppar*aparp/ter)    & 
+          +isg*(-dgdtp-zdot*dpdzp+(xdt0+xdtem*nonline)*exp1+(ydt0+ydtem*nonline)*eyp)/ter)*(fovg-(phip/ter*fovg+aparp*vpar/ter*fovg+w2e(m))*nonline*isonew) &
+          - dte*gammah*(avwexepsp-dnesrcp/(fesrcp+1e-8)*fovg)   &
+          - dte*ghzon*dnesrczp/(fesrcp+1e-8)*fovg              &
+          - dte*gamgtc*(vfac/ter-1.5)*dtp/ter*fovg                &
+          - dte*gamtoy*(1.5*sqrt(pi*vfac/ter)-3)*dtp/ter*fovg                     
+!if isunie==1, the maximum weight for full-f (at v=0) is xnp/(2*pi*ter*amie)**1.5*cv. The cut-off value should be a fraction of this.
+     if(abs(w3e(m)).gt. wecut .and. nonline==1)then
         w3e(m) = 0.
         w2e(m) = 0.
         mynowe = mynowe+1
      end if
 
+     !limit parallel velocity to within the loaded region. For marker control. vpar is more "physical" than u3e(m)
+     if(isunie==1 .and. vpar > vsphere)then
+        mynovpar = mynovpar+1
+        u3e(m) = -vsphere+qel/emass*aparp*ipara
+        w3e(m) = 0.
+        w2e(m) = 0.
+     end if
+     if(isunie==1 .and. vpar < -vsphere)then
+        mynovpar = mynovpar+1        
+        u3e(m) = vsphere+qel/emass*aparp*ipara
+        w3e(m) = 0.
+        w2e(m) = 0.
+     end if
+     
 
      mytotn = mytotn+1
-     if(isuni.eq.1)mytotn = mytotn+exp(-vfac)
+     if(isunie.eq.1)mytotn = mytotn+exp(-vfac)
      mytrap = mytrap+1-ipass(m)
-     if(isuni.eq.1)mytrap = mytrap+exp(-vfac)*(1-ipass(m))
+     if(isunie.eq.1)mytrap = mytrap+exp(-vfac)*(1-ipass(m))
 
      laps=anint((z3e(m)/lz)-.5)*(1-peritr)
      r=x3e(m)-0.5*lx+lr0
@@ -3678,7 +3651,11 @@ subroutine cint(n)
      w2e(m)=w3e(m)
 
   enddo
+!$omp end parallel do
+
   call MPI_ALLREDUCE(mynowe,nowe,1,MPI_integer, &
+       MPI_SUM, MPI_COMM_WORLD,ierr)
+  call MPI_ALLREDUCE(mynovpar,novpar,1,MPI_integer, &
        MPI_SUM, MPI_COMM_WORLD,ierr)
 
   sbuf(1)=myke
@@ -3803,9 +3780,19 @@ subroutine drdt(ip)
   real :: rbfs(0:imx,0:jmx)
   real :: dum
   real :: djdx(0:imx,0:jmx,0:1),djdy(0:imx,0:jmx,0:1)
+  real :: jxjac(0:imx,0:jmx,0:1),jyjac(0:imx,0:jmx,0:1)
 
-  call gradx(jionx*ision-upex,djdx)
-  call grady(jiony*ision-upey,djdy)
+  do i = 0, im
+     do j = 0, jm
+        do k = 0,1
+           jxjac(i,j,k) = (jionx(i,j,k)*ision-upex(i,j,k))*jac(i,k)
+           jyjac(i,j,k) = (jiony(i,j,k)*ision-upey(i,j,k))*jac(i,k)
+        end do
+     end do
+  end do
+  call gradx(jxjac,djdx)
+  call grady(jyjac,djdy)
+  
   !      djdx = 0.
   !      djdy = 0.
   isdndt = 1
@@ -3841,7 +3828,7 @@ subroutine drdt(ip)
         drhodt(i,j,0) = -((jion(i,j,1)*ision-q(1)*q(1)/mims(1)*gn0s(1,i)*cn0s(1)*apar(i,j,1)*&
              bdgrzn(i,1)/ntube*isiap-upazd(i,j,1) &
              -amie*upa0(i,j,1))*jac(i,1)-dum)/(2.*dz)/jac(i,0) &
-             -djdx(i,j,0)-djdy(i,j,0) &
+             -djdx(i,j,0)/jac(i,0)-djdy(i,j,0)/jac(i,0) &
              +(drhoidt(i,j,0)*ision-dnedt(i,j,0))
 
         dum = weightm(i)*rbfr(i,jmi(i,j)) &
@@ -3849,7 +3836,7 @@ subroutine drdt(ip)
         drhodt(i,j,1) = -(dum-(jion(i,j,0)*ision-q(1)*q(1)/mims(1)*gn0s(1,i)*cn0s(1)*apar(i,j,0)*&
              bdgrzn(i,0)/ntube*isiap-upazd(i,j,0)  &
              -amie*upa0(i,j,0))*jac(i,0))/(2.*dz)/jac(i,1)  &
-             -djdx(i,j,1)-djdy(i,j,1) &
+             -djdx(i,j,1)/jac(i,1)-djdy(i,j,1)/jac(i,1) &
              +(drhoidt(i,j,1)*ision-dnedt(i,j,1))
      end do
   end do
@@ -3868,11 +3855,6 @@ subroutine dpdt(ip)
   real :: b,gam0,gam1,delyz,th,bf,dum,r,qr,shat
   real,DIMENSION(1:5) :: b1,b2,ter
   real :: kx1,kx2,ky
-  real,dimension(:),allocatable :: akx,aky
-  real,dimension(:,:,:,:,:),allocatable:: gamb1,gamb2
-  complex,dimension(:,:,:,:),allocatable :: mx
-  integer,dimension(:,:,:,:),allocatable :: ipiv
-  real,dimension(:,:,:),allocatable :: formdpt
   real :: sgnx,sgny,sz,myfe,u(0:imx,0:jmx,0:1)
   INTEGER :: i,i1,j,j1,k,k1,l,m,n,ifirst,nstep,ip,INFO
   INTEGER :: l1,m1,myk,myj,ix,ikx
@@ -3883,169 +3865,21 @@ subroutine dpdt(ip)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp
   real :: grp,gxdgyp,grdgtp,gthp
   real :: wx0,wx1,wz0,wz1
-  character(len=70) fname
-  character(len=5) holdmyid
-
-  save formdpt,ifirst,akx,aky,mx,gamb1,gamb2,ipiv
-  if(idg==1)write(*,*)'enter gkps'
-
-  !     form factors....
-  write(holdmyid,'(I5.5)') MyId
-  fname='./matrix/'//'mx_dpt_'//holdmyid
-  if (ifirst.ne.-99) then
-     allocate(akx(0:imx-1),aky(0:jcnt-1),&
-          gamb1(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1),&
-          gamb2(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1))
-     allocate(mx(imx-1,imx-1,0:jcnt-1,0:1),formdpt(0:imx-1,0:jcnt-1,0:1))
-     allocate(ipiv(imx-1,imx-1,0:jcnt-1,0:1))
-
-     if(iget.eq.1) then
-        open(30000+MyId,file=fname,form='unformatted',status='old')
-        read(30000+MyId)mx,ipiv
-        close(30000+myid)
-        goto 200
-     end if
-
-     do l=0,im-1
-        do m=0,jcnt-1
-           j = tclr*jcnt+m
-           do i=0,im-1 
-              r = lr0-lx/2+i*dx
-              i1 = int((r-rin)/dr)
-              i1 = min(i1,nr-1)
-              wx0 = (rin+(i1+1)*dr-r)/dr
-              wx1 = 1.-wx0
-              do ns = 1, nsm
-                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
-              enddo
-              do n = 0,1
-                 k = gclr*kcnt+n
-                 k1 = int(k*dz/delz)
-                 k1 = min(k1,ntheta-1)
-                 wz0 = ((k1+1)*delz-dz*k)/delz
-                 wz1 = 1-wz0
-                 th = wz0*thfnz(k1)+wz1*thfnz(k1+1)
-                 k = int((th+pi)/dth)
-                 k = min(k,ntheta-1)
-                 wz0 = (-pi+(k+1)*dth-th)/dth
-                 wz1 = 1.-wz0
-                 bfldp = wx0*wz0*bfld(i1,k)+wx0*wz1*bfld(i1,k+1) &
-                      +wx1*wz0*bfld(i1+1,k)+wx1*wz1*bfld(i1+1,k+1) 
-                 dydrp = wx0*wz0*dydr(i1,k)+wx0*wz1*dydr(i1,k+1) &
-                      +wx1*wz0*dydr(i1+1,k)+wx1*wz1*dydr(i1+1,k+1) 
-                 qhatp = wx0*wz0*qhat(i1,k)+wx0*wz1*qhat(i1,k+1) &
-                      +wx1*wz0*qhat(i1+1,k)+wx1*wz1*qhat(i1+1,k+1) 
-                 grp = wx0*wz0*gr(i1,k)+wx0*wz1*gr(i1,k+1) &
-                      +wx1*wz0*gr(i1+1,k)+wx1*wz1*gr(i1+1,k+1) 
-                 gthp = wx0*wz0*gth(i1,k)+wx0*wz1*gth(i1,k+1) &
-                      +wx1*wz0*gth(i1+1,k)+wx1*wz1*gth(i1+1,k+1) 
-                 gxdgyp = wx0*wz0*gxdgy(i1,k)+wx0*wz1*gxdgy(i1,k+1) &
-                      +wx1*wz0*gxdgy(i1+1,k)+wx1*wz1*gxdgy(i1+1,k+1) 
-                 grdgtp = wx0*wz0*grdgt(i1,k)+wx0*wz1*grdgt(i1,k+1) &
-                      +wx1*wz0*grdgt(i1+1,k)+wx1*wz1*grdgt(i1+1,k+1) 
-
-                 m1 = mstart+int((float(m)+1.0)/2)                                                                                       
-                 if(m==0)m1=0                                                                                                            
-                 sgny = isgnft(m)                                                                                                        
-
-                 ky=sgny*2.*pi*float(m1)/ly
-                 kx1=pi*float(l)/lx
-                 kx2=-pi*float(l)/lx
-                 bf=bfldp
-                 do ns = 1, nsm
-                    b1(ns)=mims(ns)*(kx1*kx1*grp**2 + &
-                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
-                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
-                         +2*kx1*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
-
-                    b2(ns)=mims(ns)*(kx2*kx2*grp**2 + &
-                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
-                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
-                         +2*kx2*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
-
-                    call srcbes(b1(ns),gam0,gam1)
-                    gamb1(ns,l,m,i,n)=gam0
-                    call srcbes(b2(ns),gam0,gam1)
-                    gamb2(ns,l,m,i,n)=gam0
-                 end do
-
-                 !   formfactor in gkps
-                 formdpt(l,m,n) = 1./jmx 
-                 if(abs(ky)>kycut)formdpt(l,m,n) = 0.
-                 !                    if(abs(ky)==0.)formdpt(l,m,n) = 0.
-                 if(m1.ne.mlk.and.onemd==1)formdpt(l,m,n) = 0.
-              enddo
-           enddo
-        enddo
-     enddo
-
-     do k = 0,1
-        do j = 0,jcnt-1
-           do i = 1,imx-1
-              r = lr0-lx/2+i*dx
-              i1 = int((r-rin)/dr)
-              i1 = min(i1,nr-1)
-              wx0 = (rin+(i1+1)*dr-r)/dr
-              wx1 = 1.-wx0
-              do ns = 1, nsm
-                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
-              enddo
-              do ix = 1,imx-1
-                 mx(i,ix,j,k) = 0.
-                 do ikx = 0,imx-1
-                    do ns = 1, nsm
-                       mx(i,ix,j,k) = mx(i,ix,j,k)+q(ns)*sin(ix*ikx*pi/imx)* &
-                            ((1-gamb1(ns,ikx,j,i,k))*exp(IU*ikx*i*pi/imx)- &
-                            (1-gamb2(ns,ikx,j,i,k))*exp(-IU*ikx*i*pi/imx)) &
-                            /ter(ns)*cn0s(ns)*gn0s(ns,i)/(IU*imx)
-                    end do
-                 end do
-              end do
-           end do
-        end do
-     end do
-     do k = 0,1
-        do j = 0,jcnt-1
-           call ZGETRF(imx-1,imx-1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k),INFO )
-        end do
-     end do
-
-     if(iget.eq.0) then
-        open(30000+MyId,file=fname,form='unformatted',status='unknown')
-        write(30000+MyId)mx,ipiv
-        close(30000+myid)
-        goto 200
-     end if
-
-     if(gclr==kmx/2.and.tclr==0.and.nstep==0)then
-        !           write(*,*)'setup in gkps'
-        open(20,file="mx",status='unknown')
-        j = 0
-        k = 0
-        do i = 1,imx-1
-           do ix = 1,imx-1
-              if(abs(i-ix)<40)write(20,10)i,ix,mx(i,ix,j,k),mx(ix,i,j,k)
-           end do
-        end do
-10      format(1x,i5,1x,i5,2(2x,e12.5,2x,e12.5))
-        close(20)
-     end if
-200  ifirst=-99
-  endif
-  if(idg==1)write(*,*)'pass form factors'
 
   call dcmpy(drhodt(0:imx-1,0:jmx-1,0:1),v)
 
   temp3dxy = 0.
-  do k = 0,1
-     do j = 0,jcnt-1
+
+!$omp parallel do private(k,j,myj)
+  do i = 0,jcnt*2-1
+     k = int(i/jcnt)
+     j = i-k*jcnt
         myj=jft(j)
         sl(1:imx-1,j,k) = v(1:imx-1,j,k)
-        call ZGETRS('N',imx-1,1,mx(:,:,j,k),imx-1,ipiv(:,:,j,k), &
+        call ZGETRS('N',imx-1,1,mxd(:,:,j,k),imx-1,ipivd(:,:,j,k), &
              sl(:,j,k),imx-1,INFO) 
         temp3dxy(1:imx-1,myj,k) = sl(1:imx-1,j,k)
         temp3dxy(0,myj,k) = 0.
-     end do
   end do
 
 
@@ -4103,7 +3937,7 @@ subroutine jie(ip,n)
   use gem_equil
   implicit none
   real :: phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp
-  real :: enerb,vxdum,dum,xdot,ydot,zdot,pidum,dum1,dum2
+  real :: enerb,vxdum,dum,xdot,ydot,zdot,xdt0,ydt0,pidum,dum1,dum2,fdum,gdum,fovg
   INTEGER :: m,n,i,j,k,l,ns,ip,nonfi,nonfe
   real :: wx0,wx1,wy0,wy1,wz0,wz1,vte
   real :: sz,wght,wght0,wght1,wght2,r,th,cost,sint,b,qr,dv,kap,ter
@@ -4120,6 +3954,12 @@ subroutine jie(ip,n)
   real :: mydnidt(0:imx,0:jmx,0:1),mydnedt(0:imx,0:jmx,0:1)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),vncp,vparspp
+  real :: sn(4),cn(4),bdgrhop,e1gxp,e2gxp,be1gxp,be2gxp,e1gyp,e2gyp,be1gyp,be2gyp,bdgvrx,bdgvry
+  
+  sn(1) = 1;   cn(1) = 0
+  sn(2) = -1;  cn(2) = 0
+  sn(3) = 0;   cn(3) = 1
+  sn(4) = 0;   cn(4) = -1
 
   nonfi = 1 
   nonfe = 1 
@@ -4129,14 +3969,18 @@ subroutine jie(ip,n)
   drhoidt = 0.
   ns=1
 
-  pidum = 1./(pi*2)**1.5*(vwidth)**3
-  if(isuni.eq.0)pidum = 1.
-
   do ns = 1,nsm
      myjpar = 0.
      myjpex = 0.
      myjpey = 0.
      mydnidt = 0.
+
+!$omp parallel do &
+!$omp private(i,j,k,l,dv,r,th,wx0,wx1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp,grdgtp,fp,jfnp) &
+!$omp private(psipp,ter,kaptp,kapnp,xnp,vncp,vparspp,psip2p,dipdrp,b,rhog,vfac,vp0,vpar,kap,wght,wght0,wght1,rhox,rhoy) &
+!$omp private(exp1,eyp,delbxp,delbyp,aparp,xs,xt,yt,bstar,enerb,dum1,vxdum,xdot,ydot,zdot,fdum,gdum,fovg) &
+!$omp private(bdgrhop,e1gxp,e2gxp,be1gxp,be2gxp,e1gyp,e2gyp,be1gyp,be2gyp,bdgvrx,bdgvry) &
+!$omp reduction(+: myjpar,myjpex,myjpey,mydnidt)
      do m=1,mm(ns)
         dv=float(lr(ns))*(dx*dy*dz)
 
@@ -4181,6 +4025,24 @@ subroutine jie(ip,n)
         grdgtp = wx0*wz0*grdgt(i,k)+wx0*wz1*grdgt(i,k+1) &
              +wx1*wz0*grdgt(i+1,k)+wx1*wz1*grdgt(i+1,k+1) 
 
+        e1gxp = wx0*wz0*e1gx(i,k)+wx0*wz1*e1gx(i,k+1) &
+             +wx1*wz0*e1gx(i+1,k)+wx1*wz1*e1gx(i+1,k+1) 
+        e1gyp = wx0*wz0*e1gy(i,k)+wx0*wz1*e1gy(i,k+1) &
+             +wx1*wz0*e1gy(i+1,k)+wx1*wz1*e1gy(i+1,k+1) 
+        e2gxp = wx0*wz0*e2gx(i,k)+wx0*wz1*e2gx(i,k+1) &
+             +wx1*wz0*e2gx(i+1,k)+wx1*wz1*e2gx(i+1,k+1) 
+        e2gyp = wx0*wz0*e2gy(i,k)+wx0*wz1*e2gy(i,k+1) &
+             +wx1*wz0*e2gy(i+1,k)+wx1*wz1*e2gy(i+1,k+1) 
+        be1gxp = wx0*wz0*bdge1gx(i,k)+wx0*wz1*bdge1gx(i,k+1) &
+             +wx1*wz0*bdge1gx(i+1,k)+wx1*wz1*bdge1gx(i+1,k+1) 
+        be1gyp = wx0*wz0*bdge1gy(i,k)+wx0*wz1*bdge1gy(i,k+1) &
+             +wx1*wz0*bdge1gy(i+1,k)+wx1*wz1*bdge1gy(i+1,k+1) 
+        be2gxp = wx0*wz0*bdge2gx(i,k)+wx0*wz1*bdge2gx(i,k+1) &
+             +wx1*wz0*bdge2gx(i+1,k)+wx1*wz1*bdge2gx(i+1,k+1) 
+        be2gyp = wx0*wz0*bdge2gy(i,k)+wx0*wz1*bdge2gy(i,k+1) &
+             +wx1*wz0*bdge2gy(i+1,k)+wx1*wz1*bdge2gy(i+1,k+1) 
+
+        
         fp = wx0*f(i)+wx1*f(i+1)        
         jfnp = wz0*jfn(k)+wz1*jfn(k+1)
         psipp = wx0*psip(i)+wx1*psip(i+1)        
@@ -4199,7 +4061,7 @@ subroutine jie(ip,n)
 
         rhog=sqrt(2.*b*mu(ns,m)*mims(ns))/(q(ns)*b)*iflr
         vfac = 0.5*(mims(ns)*u3(ns,m)**2 + 2.*mu(ns,m)*b)
-        if(ildu.eq.1)xnp = xnp*(tgis(ns)/ter)**1.5*exp(vfac*(1/tgis(ns)-1./ter))
+
         vp0 = 1./b**2*lr0/q0*qhatp*fp/radiusp*grcgtp
         vp0 = vp0*vncp*vexbsw
 
@@ -4218,6 +4080,7 @@ subroutine jie(ip,n)
         rhox(4) = 0
         rhoy(4) = -rhoy(3)
 
+        
         exp1=0.
         eyp=0.
         delbxp = 0.
@@ -4266,6 +4129,19 @@ subroutine jie(ip,n)
              -1./b**2*q0*br0*fp/radiusp*grcgtp*vncp*vexbsw/jfnp &
              -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*q0*br0*grcgtp/jfnp
 
+        bdgrhop = -rhog*psipp/(2*radiusp*b*b)*dbdtp*grcgtp
+
+        fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *mims(ns)**1.5
+        if(ildu==0)gdum = fdum/xnp
+        if(ildu==1)gdum = 1./(2*pi*tgis(ns))**1.5*exp(-vfac/tgis(ns)) *mims(ns)**1.5
+        i = int(x3(ns,m)/dxsrc)
+        i = min(i,nxsrc-1)
+        i = max(i,0)        
+        k = int(vfac/(ter*desrc))
+        k = min(k,nesrc-1)
+        if(igmrkr==1)gdum = gmrkr(ns,i,k)
+        fovg = fdum/gdum
+
         !    now do 1,2,4 point average, where lr is the no. of points...
         do l=1,lr(1)
            xs=x3(ns,m)+rhox(l) !rwx(1,l)*rhog
@@ -4279,10 +4155,15 @@ subroutine jie(ip,n)
            j=int(yt/dy+0.5)
            k=int(z3(ns,m)/dz+0.5)-gclr*kcnt
 
-           wght1 = wght0*(vxdum*kap+q(ns)*(xdot*exp1/ter+(ydot-vp0)*eyp/ter))*xnp
+           bdgvrx = bdgrhop*(e2gxp*cn(l)+e1gxp*sn(l))   &
+                +rhog*(be2gxp*cn(l)+be1gxp*sn(l))
+           bdgvry = bdgrhop*(e2gyp*cn(l)+e1gyp*sn(l))   &
+                +rhog*(be2gyp*cn(l)+be1gyp*sn(l))
+           
+           wght1 = wght0*(vxdum*kap+q(ns)*(xdot*exp1/ter+(ydot-vp0)*eyp/ter))*(fovg-w3(ns,m)*nonlin(ns)*isonew)
            myjpar(i,j,k) = myjpar(i,j,k)+wght*zdot
-           myjpex(i,j,k) = myjpex(i,j,k)+wght*xdot
-           myjpey(i,j,k) = myjpey(i,j,k)+wght*ydot
+           myjpex(i,j,k) = myjpex(i,j,k)+wght*xdot+wght*vpar*bdgvrx
+           myjpey(i,j,k) = myjpey(i,j,k)+wght*ydot+wght*vpar*bdgvry
            mydnidt(i,j,k) = mydnidt(i,j,k)+wght1
         enddo
      enddo
@@ -4319,14 +4200,18 @@ subroutine jie(ip,n)
   end do
 
   ! electrons current
-  pidum = 1./(pi*2)**1.5*(vwidthe)**3
-  if(isuni.eq.0)pidum = 1.
 
   vte = sqrt(amie*t0e(nr/2))
   myupex = 0.
   myupey = 0.
   myupazd = 0.
   mydnedt = 0.
+
+!$omp parallel do &
+!$omp private(i,j,k,l,dv,r,th,wx0,wx1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp,grdgtp,fp,jfnp) &
+!$omp private(psipp,ter,kaptp,kapnp,xnp,vncp,vparspp,psip2p,dipdrp,b,rhog,vfac,vp0,vpar,kap,wght,wght0,wght1,wght2,rhox,rhoy) &
+!$omp private(exp1,eyp,ezp,phip,delbxp,delbyp,aparp,xs,xt,yt,bstar,enerb,dum1,dum2,vxdum,xdot,ydot,zdot,xdt0,ydt0,fdum,gdum,fovg) &
+!$omp reduction(+: myupex,myupey,myupazd,mydnedt)
   do m=1,mme
      dv=(dx*dy*dz)
 
@@ -4385,34 +4270,27 @@ subroutine jie(ip,n)
      psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
      dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
 
+     vpar = u3e(m)-qel/emass*aparp*ipara
      vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)
-     if(eldu.eq.1)xnp = xnp*(tge/ter)**1.5*exp(vfac*(1/tge-1./ter))
      vp0 = 1./b**2*lr0/q0*qhatp*fp/radiusp*grcgtp
      vp0 = vp0*vncp*vexbsw
      kap = kapnp - (1.5-vfac/ter)*kaptp
 
-     wght=w3e(m)/dv
-     wght0=exp(-vfac)/dv
-     if(isuni.eq.0)wght0=1./dv
-     wght0 = wght0
-     vpar = u3e(m)
-     !         if(abs(vpar/vte).gt.vcut)wght = 0.
-     !         if(abs(vpar/vte).gt.vcut)wght0 = 0.
-
      bstar = b*(1+emass*vpar/(qel*b)*bdcrvbp)
      enerb=(mue3(m)+emass*vpar*vpar/b)/qel*b/bstar*tor
 
-     xdot = -tor*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
-     ydot = +tor*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
-          (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0 &
-          +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
-          -emass*vpar**2/(qel*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
-          -dipdrp/radiusp*emass*vpar**2/(qel*bstar*b)*grcgtp*lr0/q0*qhatp  
-
-     zdot =  u3e(m)*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
-          +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
-          -1./b**2*q0*br0*fp/radiusp*grcgtp*vncp*vexbsw/jfnp &
-          -dipdrp/radiusp*emass*vpar**2/(qel*bstar*b)*q0*br0*grcgtp/jfnp
+     
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *emass**1.5
+     if(eldu==0)gdum = fdum/xnp
+     if(eldu==1 .and. isunie==0)gdum = 1./(2*pi*tge)**1.5*exp(-vfac/tge) *emass**1.5
+     if(isunie==1)gdum = 1.0/cv
+     i = int(x3e(m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)     
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkre==1)gdum = gmrkre(i,k)
+     fovg = fdum/gdum
 
      xt = x3e(m)
      yt = y3e(m)
@@ -4465,11 +4343,6 @@ subroutine jie(ip,n)
           + w011(m)*delby(i,j+1,k+1) &
           + w111(m)*delby(i+1,j+1,k+1)
 
-     dum1 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
-     vxdum = (eyp/b+vpar/b*delbxp*iflut)*dum1
-     xdot = xdot+vxdum*nonline
-     ydot = ydot+(-exp1/b+vpar/b*delbyp*iflut)*dum1*nonline
-
      phip = w000(m)*phi(i,j,k)  &
           + w100(m)*phi(i+1,j,k) &
           + w010(m)*phi(i,j+1,k) &
@@ -4479,7 +4352,34 @@ subroutine jie(ip,n)
           + w011(m)*phi(i,j+1,k+1) &
           + w111(m)*phi(i+1,j+1,k+1)
 
-     wght1 = (wght+1./dv*phip*isg/ter*xnp)
+     aparp = w000(m)*apar(i,j,k) + w100(m)*apar(i+1,j,k)  &
+          + w010(m)*apar(i,j+1,k) + w110(m)*apar(i+1,j+1,k) + &
+          w001(m)*apar(i,j,k+1) + w101(m)*apar(i+1,j,k+1) +   &
+          w011(m)*apar(i,j+1,k+1) + w111(m)*apar(i+1,j+1,k+1)
+
+
+     xdot = -tor*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
+     xdt0 = xdot
+     ydot = +tor*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
+          (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0 &
+          +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
+          -emass*vpar**2/(qel*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
+          -dipdrp/radiusp*emass*vpar**2/(qel*bstar*b)*grcgtp*lr0/q0*qhatp  
+     ydt0 = ydot
+     
+     zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
+          +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
+          -1./b**2*q0*br0*fp/radiusp*grcgtp*vncp*vexbsw/jfnp &
+          -dipdrp/radiusp*emass*vpar**2/(qel*bstar*b)*q0*br0*grcgtp/jfnp
+
+     dum1 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
+     vxdum = (eyp/b+vpar/b*delbxp)*dum1
+     xdot = xdot+vxdum*nonline
+     ydot = ydot+(-exp1/b+vpar/b*delbyp)*dum1*nonline
+
+     wght=w3e(m)/dv
+     wght0=1./dv
+     wght1 = (wght+1./dv*phip*isg/ter*fovg)
      wght2 = wght*zdot
 
      myupex(i,j,k)      =myupex(i,j,k)+wght1*w000(m)*xdot
@@ -4511,7 +4411,10 @@ subroutine jie(ip,n)
 
      dum2 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      vxdum = (eyp/b+vpar/b*delbxp)*dum2 
-     wght0 = wght0*(vxdum*kap-xdot*exp1/ter-(ydot-vp0)*eyp/ter)*xnp
+     wght0 = wght0*(vxdum*kap-xdt0*exp1/ter-(ydt0-vp0)*eyp/ter)*(fovg-(phip/ter*fovg+aparp*vpar/ter*fovg+w3e(m))*nonline*isonew) &
+          +wght0*(1./emass*aparp/b*(delbyp*eyp+delbxp*exp1) * 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp  &
+          +aparp/emass*ezp * q0*br0/radiusp/b*psipp*grcgtp/jfnp)/ter*fovg * ipara
+          
 
      mydnedt(i,j,k)      =mydnedt(i,j,k)+wght0*w000(m)
      mydnedt(i+1,j,k)    =mydnedt(i+1,j,k)+wght0*w100(m)
@@ -4554,44 +4457,82 @@ subroutine lorentz(ip,n)
 
   implicit none
 
-  integer :: i,ip,k,m,n,ncol,icol
+  integer :: i,j,ip,k,m,n,ncol,icol
   real :: edum,vdum,dum,dum1,ptch,vte,r,qr,th,cost,b
-  real :: h_x,h_coll,x,eps,dtcol,uold,hee,nue,ter
-  real :: wx0,wx1,wz0,wz1
+  real :: h_x,h_coll,x,eps,dtcol,uold,hee,nue
+  real :: wx0,wx1,wz0,wz1,wy0,wy1,vpar,ter,xnp,bfldp,vfac,xt,yt,zt
+  real :: x000,x001,x010,x011,x100,x101,x110,x111,aparp,zeffp,nuep
+  real :: wtmp
 
-  ncol = 1
-  if(ip.eq.1)dtcol = dt/ncol*2
-  if(ip.eq.0)dtcol = dt/ncol
-  vte = sqrt(amie*t0e(nr/2))
   if(rneu==0.0)return
-  do k = 1,mme
-     r=x3e(k)-0.5*lx+lr0
+  ncol = 10
+  if(ip.eq.1)dtcol = dte/(ncol*2)
+  if(ip.eq.0)dtcol = dte/ncol
+  do m=1,mme
+     r=x3e(m)-0.5*lx+lr0
 
-     m = int(z3e(k)/delz)
-     wz0 = ((m+1)*delz-z3e(k))/delz
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
      wz1 = 1-wz0
-     th = wz0*thfnz(m)+wz1*thfnz(m+1)
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
      i = int((r-rin)/dr)
      wx0 = (rin+(i+1)*dr-r)/dr
      wx1 = 1.-wx0
-     m = int((th+pi)/dth)
-     wz0 = (-pi+(m+1)*dth-th)/dth
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
      wz1 = 1.-wz0
+
      ter = wx0*t0e(i)+wx1*t0e(i+1)        
-     b = wx0*wz0*bfld(i,m)+wx0*wz1*bfld(i,m+1) &
-          +wx1*wz0*bfld(i+1,m)+wx1*wz1*bfld(i+1,m+1) 
-     uold = u3e(k)
-     edum = b*mue3(k)+0.5*emass*u3e(k)*u3e(k)
+     nuep = wx0*nue0(i)+wx1*nue0(i+1)        
+     zeffp = wx0*zeff(i)+wx1*zeff(i+1)        
+     xnp = wx0*xn0e(i)+wx1*xn0e(i+1)        
+     bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
+     b=1.-tor+tor*bfldp
+
+     vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)
+     if(eldu.eq.1 .and. isunie==0)xnp = xnp*(tge/ter)**1.5*exp(vfac*(1/tge-1./ter))
+     if(isunie.eq.1)xnp = xnp*1./(2*pi*ter*amie)**1.5*cv*exp(-vfac/ter)
+
+     xt=x3e(m)
+     yt=y3e(m)
+     zt=z3e(m)
+     i=int(xt/dx)
+     j=int(yt/dy)
+     k=0 !int(z3e(m)/dz)-gclr*kcnt
+     wx0=float(i+1)-xt/dx 
+     wx1=1.-wx0
+     wy0=float(j+1)-yt/dy
+     wy1=1.-wy0
+     wz0=float(gclr*kcnt+k+1)-z3e(m)/dz
+     wz1=1.-wz0
+     x000=wx0*wy0*wz0
+     x001=wx0*wy0*wz1
+     x010=wx0*wy1*wz0
+     x011=wx0*wy1*wz1
+     x100=wx1*wy0*wz0
+     x101=wx1*wy0*wz1
+     x110=wx1*wy1*wz0
+     x111=wx1*wy1*wz1
+
+     aparp = x000*apar(i,j,k) + x100*apar(i+1,j,k)  &
+           + x010*apar(i,j+1,k) + x110*apar(i+1,j+1,k) + &
+           x001*apar(i,j,k+1) + x101*apar(i+1,j,k+1) +   &
+           x011*apar(i,j+1,k+1) + x111*apar(i+1,j+1,k+1)
+
+
+!perform random kick 
+     uold = u3e(m)
+     edum = b*mue3(m)+0.5*emass*u3e(m)*u3e(m)
      vdum = sqrt(2.*edum/emass)
-     ptch = u3e(k)/vdum
+     ptch = u3e(m)/vdum
      eps = edum/ter
      x = sqrt(eps)
      h_x    = 4.0*x*x/(3.0*sqrt(pi))
      h_coll = h_x/sqrt(1.0+h_x**2)
-     !         h_coll = exp(-x*x)/(x*sqrt(pi))+(1.0-1.0/(2.0*x*x))*DERF(x)
-     ! collision frequency for experimental profiles
      hee = exp(-x*x)/(x*sqrt(pi))+(1.0-1.0/(2.0*x*x))*erf(x)
-     nue=rneu*(wx0*nue0(i)+wx1*nue0(i+1))*(wx0*zeff(i)+wx1*zeff(i+1)+hee)
+     nue=rneu*nuep*(zeffp+hee)
      dum1 = 1/(2*(eps+0.1))**1.5  !*(1+h_coll)
      !         dum = dtcol*rneu*dum1
      dum = dtcol*nue*dum1
@@ -4602,15 +4543,18 @@ subroutine lorentz(ip,n)
         ptch = min(ptch,0.999)
         ptch = max(ptch,-0.999)
      end do
-     u3e(k) = vdum*ptch
-     mue3(k) = 0.5*emass*vdum*vdum*(1.-ptch*ptch)/b
-     !         u1e(k) = u1e(k)+u3e(k)-uold
-     if(ip.eq.0)then
-        mue2(k) = mue3(k)
-        u2e(k) = u3e(k)
+     u3e(m) = vdum*ptch
+     mue3(m) = 0.5*emass*vdum*vdum*(1.-ptch*ptch)/b
+     if(ip==0)then
+        mue2(m) = mue3(m)
+        u2e(m) = u3e(m)
      end if
-     !         if(myid.eq.master)write(*,*)mue(k),vdum,k,ptch
-  end do
+     
+     wtmp = w3e(m)-qel/ter*uold*aparp*xnp 
+     w3e(m) = wtmp+qel/ter*u3e(m)*aparp*xnp 
+     if(ip==0)w2e(m) = w3e(m)
+
+  enddo
 
 end subroutine lorentz
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -4619,14 +4563,27 @@ subroutine initialize
   use gem_equil
   use gem_fft_wrapper
   implicit none
+
+  include "fftw3.f03"
   real :: dum,dum1,dum2,jacp,xndum,r,wx0,wx1
   !        complex(8),dimension(0:1) :: x,y
   real,dimension(0:1) :: x,y
-  integer :: n,i,j,k,ip
+  integer :: n,i,j,k,ip,iret
 
   call init
-  call mpi_barrier(mpi_comm_world,ierr)
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'pass init',myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
+  end if
 
+  call mpi_barrier(mpi_comm_world,ierr)
+  
   dum = 0.
   dum1 = 0.
   do i = 0,im-1
@@ -4650,8 +4607,15 @@ subroutine initialize
   totvol = dx*ly*dz*jacp    
   n0=float(tmm(1))/totvol
   n0e=mme*numprocs/totvol
-  if(myid==0)then
-     write(*,*)'totvol,jacp,dum2=',totvol,jacp,dum2
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'totvol,jacp,dum2=',totvol,jacp,dum2,myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
   end if
 
   !  calculate the volume of each radial subdomain
@@ -4682,6 +4646,21 @@ subroutine initialize
 
   ncurr = 1
   call blendf
+
+!  call dfftw_init_threads(iret)
+!  call dfftw_plan_with_nthreads(n_omp)
+
+  call dfftw_plan_dft_1d(planx,imx,xin,xout,fftw_forward, FFTW_ESTIMATE)
+  call dfftw_plan_dft_1d(iplanx,imx,xin,xout,fftw_backward,FFTW_ESTIMATE)
+  call dfftw_plan_dft_1d(plany,jmx,yin,yout,fftw_forward, FFTW_ESTIMATE)
+  call dfftw_plan_dft_1d(iplany,jmx,yin,yout,fftw_backward,FFTW_ESTIMATE)
+  call dfftw_plan_dft_1d(planz,kmx,zin,zout,fftw_forward, FFTW_ESTIMATE)
+  call dfftw_plan_dft_1d(iplanz,kmx,zin,zout,fftw_backward,FFTW_ESTIMATE)
+  call dfftw_plan_r2r_1d(plansinx,imx-1,xsinin,xsinout,FFTW_RODFT00, FFTW_ESTIMATE) 
+
+  if(ifluid==1 .and. iperi==0)call gkps_init
+  if(ifluid==1 .and. iperi==0)call ezamp_init
+  if(ifluid==1 .and. iperi==0)call dpdt_init
 end subroutine initialize
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 subroutine loader_wrapper
@@ -4692,10 +4671,21 @@ subroutine loader_wrapper
   integer :: n,i,j,k,ip,ns
 
   do ns = 1,nsm
-     if(isuni.eq.0)call loadi(ns)
+     call loadi(ns)
   end do
-  if(ifluid.eq.1)call ldel
-  if(idg.eq.1)write(*,*)'past loader'
+  if(ifluid.eq.1 .and. isunie==1)call ldeluni
+  if(ifluid.eq.1 .and. isunie==0)call ldel
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'pass loader',myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
+  end if
+
 end subroutine loader_wrapper
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 subroutine accumulate(n,ip)
@@ -4703,10 +4693,14 @@ subroutine accumulate(n,ip)
   use gem_equil
   implicit none
 
-  integer :: n,i,j,k,ip
+  integer :: n,i,j,k,ip,ns
   if(ifluid==1)call setw(ip,n)
   call grid1(ip,n)
-  if(idg.eq.1)write(*,*)'pass grid1'
+  if(idg==1 .and. myid==0)then
+     open(9, file='plot',status='unknown',position='append')
+     write(9,*)'pass grid1'
+     close(9)
+  end if
   call MPI_BARRIER(MPI_COMM_WORLD,ierr)        
 end subroutine accumulate
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -4732,7 +4726,11 @@ subroutine poisson(n,ip)
        endif
      endif
 
-     if(idg.eq.1)write(*,*)'pass gkps in poisson'
+     if(idg==1 .and. myid==0)then
+        open(9, file='plot',status='unknown',position='append')
+        write(9,*)'pass gkps in poisson'
+        close(9)
+     end if
      myrmsphi=0.
      rmp(it)=0.
      do k=0,mykm-1
@@ -4963,10 +4961,13 @@ subroutine push_wrapper(n,ip)
   if(ip.eq.1.and.ifluid==1)call pint
   if(ip.eq.0.and.ifluid==1)call cint(n)
   if(idg.eq.1)write(*,*)'pass pint'
-  if(ifluid==1.and.ip==0)call lorentz(ip,n)
-  !         if(ifluid==1.and.ip==0)call col(dt)
-  !         if(ip.eq.0.and.mod(n+1,10).eq.0)call avgi(1)
-  if(eprs>0.and.ip.eq.0.and.mod(n+1,nrst).eq.0)call rstpe
+  if(ifluid==1 .and. ip==0)call lorentz(ip,n)
+
+!  if(ifluid==1 .and. nonline==1 .and. ip==0)call flut
+
+!         if(ifluid==1.and.ip==0)call col(dt)
+!         if(ip.eq.0.and.mod(n+1,10).eq.0)call avgi(1)
+!  if(eprs>0.and.ip.eq.0.and.mod(n+1,nrst).eq.0)call rstpe
 
   call MPI_BARRIER(MPI_COMM_WORLD,ierr)          
 end subroutine push_wrapper
@@ -4977,10 +4978,8 @@ subroutine diagnose(n)
   implicit none
   integer :: n,i,j,k,ip
 
-  call modes2(phi,pmodehis,n)
-  if(idg.eq.1)write(*,*)'pass modes2'  
   call MPI_BARRIER(MPI_COMM_WORLD,ierr)          
-  call yveck(phi(:,:,:),n)
+  call yveck(apar(:,:,:),n)
   call yveck1(phi(:,:,:),n)
 !  call mdampd(phi(:,:,:),mdhis)
 !  call mdampd(apar(:,:,:),mdhisa)
@@ -5004,10 +5003,10 @@ subroutine reporter(n)
   if(mod(n,xnplt).eq.0) then
      call spec(n)
   endif
-13 format(1x,i6,7(2x,i7))
+13 format(1x,i6,12(2x,i7))
   if(myid.eq.master)then
      open(16, file='indicator', status='unknown',position='append')
-     write(16,13)n,ipred,icorr,jpred,jcorr,nopz,noen,nowe
+     write(16,13)n,ipred,icorr,jpred,jcorr,nopi(1),nowi(1),nopi(2),nowi(2),nopz,noen,nowe !,novpar
      close(16)
   end if
   !        if(myid==0)write(*,13)n,ipred,icorr,jpred,jcorr,nopz,noen
@@ -5015,7 +5014,7 @@ subroutine reporter(n)
 
   !     save particle arrays for restart if iput=1...
   !     do this before the code crashes due to graphics problems
-  if((iput.eq.1).and.mod(n+1,500).eq.0)call restart(2,n)
+  if((iput.eq.1).and.mod(n+1,200).eq.0)call restart(2,n)
 
   !     periodically make output for plots
   call outd(n)
@@ -5037,7 +5036,7 @@ subroutine jpar0(ip,n,it,itp)
   INTEGER :: m,n,i,j,k,l,ns,ip,it,itp
   real :: wx0,wx1,wy0,wy1,wz0,wz1,vte
   real :: sz,wght,wght0,wght1,r,th,cost,sint,b,qr,dv,xnp
-  real :: xt,yt,zt,rhog,pidum,vpar,xs,dely,vfac,ter
+  real :: xt,yt,zt,rhog,pidum,vpar,ppar,xs,dely,vfac,ter
   real :: lbfs(0:imx,0:jmx)
   real :: rbfs(0:imx,0:jmx)
   real :: lbfr(0:imx,0:jmx)
@@ -5045,10 +5044,8 @@ subroutine jpar0(ip,n,it,itp)
   real :: myupa(0:imx,0:jmx,0:1),myupa0(0:imx,0:jmx,0:1),myden0(0:imx,0:jmx,0:1)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp
   real :: grp,gxdgyp
-  real :: zdot
+  real :: zdot,fdum,gdum,fovg
 
-  pidum = 1./(pi*2)**1.5*(vwidthe)**3
-  if(isuni.eq.0)pidum = 1.
   ns=1
 
   !    electrons current due to f_M (p_para)
@@ -5065,9 +5062,30 @@ subroutine jpar0(ip,n,it,itp)
      den0apa(:,:,:) = 0.
      return
   end if
+
+!$omp parallel do &
+!$omp private(i,j,k,r,th,vpar,wx0,wx1,wz0,wz1,ter,xnp,bfldp,b,vfac,grcgtp,radiusp,dbdrp,jfnp,psipp,fp,enerb,zdot) &
+!$omp private(dv,wght0,wght1,xt,yt,zt,aparp,ppar,fdum,gdum,fovg) &
+!$omp reduction(+: myupa0,myupa,myden0)
   do m=1,mme
+     xt=x3e(m)
+     yt=y3e(m)
+     zt=z3e(m)
+     i=int(xt/dx)
+     j=int(yt/dy)
+     k=0 !int(z3e(m)/dz)-gclr*kcnt
+     aparp = w000(m)*apar(i,j,k)  &
+          + w100(m)*apar(i+1,j,k) &
+          + w010(m)*apar(i,j+1,k) &
+          + w110(m)*apar(i+1,j+1,k) &
+          + w001(m)*apar(i,j,k+1) &
+          + w101(m)*apar(i+1,j,k+1) &
+          + w011(m)*apar(i,j+1,k+1) &
+          + w111(m)*apar(i+1,j+1,k+1)
+     ppar = u3e(m)
+     vpar = u3e(m)-qel/emass*aparp*ipara
+
      r=x3e(m)-0.5*lx+lr0
-     vpar = u3e(m)
 
      k = int(z3e(m)/delz)
      wz0 = ((k+1)*delz-z3e(m))/delz
@@ -5086,9 +5104,9 @@ subroutine jpar0(ip,n,it,itp)
      bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
           +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
      b=1.-tor+tor*bfldp
-
+     
      vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)
-     if(eldu.eq.1)xnp = xnp*(tge/ter)**1.5*exp(vfac*(1/tge-1./ter))
+
      if(itp==1)then
         grcgtp = wx0*wz0*grcgt(i,k)+wx0*wz1*grcgt(i,k+1) &
              +wx1*wz0*grcgt(i+1,k)+wx1*wz1*grcgt(i+1,k+1) 
@@ -5107,6 +5125,18 @@ subroutine jpar0(ip,n,it,itp)
              +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp
      end if
 
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *emass**1.5
+     if(eldu==0)gdum = fdum/xnp
+     if(eldu==1 .and. isunie==0)gdum = 1./(2*pi*tge)**1.5*exp(-vfac/tge) *emass**1.5
+     if(isunie==1)gdum = 1.0/cv
+     i = int(x3e(m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)     
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkre==1)gdum = gmrkre(i,k)
+     fovg = fdum/gdum
+
      dv=(dx*dy*dz)
      wght0 = 1/dv
      wght1 = 1/dv
@@ -5121,17 +5151,9 @@ subroutine jpar0(ip,n,it,itp)
      i=int(xt/dx)
      j=int(yt/dy)
      k=0 !int(z3e(m)/dz)-gclr*kcnt
-     aparp = w000(m)*apar(i,j,k)  &
-          + w100(m)*apar(i+1,j,k) &
-          + w010(m)*apar(i,j+1,k) &
-          + w110(m)*apar(i+1,j+1,k) &
-          + w001(m)*apar(i,j,k+1) &
-          + w101(m)*apar(i+1,j,k+1) &
-          + w011(m)*apar(i,j+1,k+1) &
-          + w111(m)*apar(i+1,j+1,k+1)
 
      if(itp==0)then
-        wght1 = wght1*aparp*vpar*vpar/amie/ter*xnp 
+        wght1 = wght1*aparp*ppar*ppar/amie/ter*fovg
         myupa0(i,j,k)      =myupa0(i,j,k)+wght1*w000(m)
         myupa0(i+1,j,k)    =myupa0(i+1,j,k)+wght1*w100(m)
         myupa0(i,j+1,k)    =myupa0(i,j+1,k)+wght1*w010(m)
@@ -5142,7 +5164,7 @@ subroutine jpar0(ip,n,it,itp)
         myupa0(i+1,j+1,k+1)=myupa0(i+1,j+1,k+1)+wght1*w111(m)
      end if
      if(itp==1)then
-        wght0 = wght0*aparp*vpar*zdot/amie/ter*xnp 
+        wght0 = wght0*aparp*ppar*zdot/amie/ter*fovg
         myupa(i,j,k)      =myupa(i,j,k)+wght0*w000(m)
         myupa(i+1,j,k)    =myupa(i+1,j,k)+wght0*w100(m)
         myupa(i,j+1,k)    =myupa(i,j+1,k)+wght0*w010(m)
@@ -5152,7 +5174,7 @@ subroutine jpar0(ip,n,it,itp)
         myupa(i,j+1,k+1)  =myupa(i,j+1,k+1)+wght0*w011(m)
         myupa(i+1,j+1,k+1)=myupa(i+1,j+1,k+1)+wght0*w111(m)
 
-        wght0 = 1./dv*aparp*vpar/ter*xnp 
+        wght0 = 1./dv*aparp*vpar/ter*fovg 
         myden0(i,j,k)      =myden0(i,j,k)+wght0*w000(m)
         myden0(i+1,j,k)    =myden0(i+1,j,k)+wght0*w100(m)
         myden0(i,j+1,k)    =myden0(i,j+1,k)+wght0*w010(m)
@@ -5174,8 +5196,8 @@ subroutine jpar0(ip,n,it,itp)
      do  i=0,im
         do  j=0,jm
            do  k=0,mykm
-              upa0(i,j,k)= myupa(i,j,k)/n0e/jac(i,k)*pidum*cn0e
-              den0apa(i,j,k)= myden0(i,j,k)/n0e/jac(i,k)*pidum*cn0e
+              upa0(i,j,k)= myupa(i,j,k)/n0e/jac(i,k)*cn0e
+              den0apa(i,j,k)= myden0(i,j,k)/n0e/jac(i,k)*cn0e
            end do
         end do
      end do
@@ -5184,16 +5206,16 @@ subroutine jpar0(ip,n,it,itp)
      do  i=0,im
         do  j=0,jm
            do  k=0,mykm
-              upa00(i,j,k)= myupa0(i,j,k)/n0e/jac(i,k)*pidum*cn0e
+              upa00(i,j,k)= myupa0(i,j,k)/n0e/jac(i,k)*cn0e
            end do
         end do
      end do
   end if
 
-  call MPI_ALLREDUCE(upa00(0:im,0:jm,0:1),  &
-       upa0t(0:im,0:jm,0:1),             &
-       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
-       MPI_SUM,GRID_COMM,ierr)
+!  call MPI_ALLREDUCE(upa00(0:im,0:jm,0:1),  &
+!       upa0t(0:im,0:jm,0:1),             &
+!       (imx+1)*(jmx+1)*2,MPI_REAL8,       &
+!       MPI_SUM,GRID_COMM,ierr)
 
 
   upa0(:,:,:) = upa0(:,:,:)+ &
@@ -5226,10 +5248,8 @@ subroutine den0_phi(ip,n,it)
   real :: rbfr(0:imx,0:jmx)
   real :: myden0(0:imx,0:jmx,0:1)
   real :: xnp,ter,dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
-  real :: grp,gxdgyp,psp,pzp,psip2p,bdcrvbp,curvbzp,dipdrp,bstar
+  real :: grp,gxdgyp,psp,pzp,psip2p,bdcrvbp,curvbzp,dipdrp,bstar,fdum,gdum,fovg
 
-  pidum = 1./(pi*2)**1.5*(vwidthe)**3
-  if(isuni.eq.0)pidum = 1.
   ns=1
 
   ! electrons density due to phi*f_M (p_para)
@@ -5262,7 +5282,19 @@ subroutine den0_phi(ip,n,it)
           +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
      b=1.-tor+tor*bfldp
      vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)
-     if(eldu.eq.1)xnp = xnp*(tge/ter)**1.5*exp(vfac*(1/tge-1./ter))
+
+     fdum = xnp/(2*pi*ter)**1.5*exp(-vfac/ter) *emass**1.5
+     if(eldu==0)gdum = fdum/xnp
+     if(eldu==1 .and. isunie==0)gdum = 1./(2*pi*tge)**1.5*exp(-vfac/tge) *emass**1.5
+     if(isunie==1)gdum = 1.0/cv
+     i = int(x3e(m)/dxsrc)
+     i = min(i,nxsrc-1)
+     i = max(i,0)     
+     k = int(vfac/(ter*desrc))
+     k = min(k,nesrc-1)
+     if(igmrkre==1)gdum = gmrkre(i,k)
+     fovg = fdum/gdum
+     
      dv=(dx*dy*dz)
      wght0 = 1./dv
      xt=x3e(m)
@@ -5282,7 +5314,7 @@ subroutine den0_phi(ip,n,it)
           + w011(m)*phi(i,j+1,k+1) &
           + w111(m)*phi(i+1,j+1,k+1)
 
-     wght0 = wght0*phip*xnp/ter
+     wght0 = wght0*phip/ter*fovg
      myden0(i,j,k)      =myden0(i,j,k)+wght0*w000(m)
      myden0(i+1,j,k)    =myden0(i+1,j,k)+wght0*w100(m)
      myden0(i,j+1,k)    =myden0(i,j+1,k)+wght0*w010(m)
@@ -5299,7 +5331,7 @@ subroutine den0_phi(ip,n,it)
   do  i=0,im
      do  j=0,jm
         do  k=0,mykm
-           den0(i,j,k)= myden0(i,j,k)/n0e/jac(i,k)*pidum*cn0e
+           den0(i,j,k)= myden0(i,j,k)/n0e/jac(i,k)*cn0e
         end do
      end do
   end do
@@ -5404,7 +5436,10 @@ subroutine setw(ip,n)
   real :: wght,r,bfldp,ter,b,vfac,th
   real :: xt,yt,zt
 
+  if(idg==1)write(*,*)'enter setw'
   vte = sqrt(amie*t0e(nr/2))
+!$omp parallel do &
+!$omp private(r,th,i,j,k,wx0,wx1,wy0,wy1,wz0,wz1,bfldp,ter,b,vfac,xt,yt,zt,wght)
   do m=1,mme
      r=x3e(m)-0.5*lx+lr0
 
@@ -5451,6 +5486,7 @@ subroutine setw(ip,n)
      w110(m)=wx1*wy1*wz0*wght
      w111(m)=wx1*wy1*wz1*wght
   end do
+!$omp end parallel do
   !      return
 end subroutine setw
 
@@ -5460,6 +5496,8 @@ subroutine fltx(u,isbl,ism)
   use gem_com
   use gem_fft_wrapper
   implicit none
+
+  include "fftw3.f03"
   INTEGER :: i,j,k,k1,l,m,n,ifirst,nstep,ip,INFO,isbl,ism
   INTEGER :: l1,m1,myk,myj,ix,ikx,ierror
   real :: u(0:imx,0:jmx,0:1)
@@ -5467,6 +5505,7 @@ subroutine fltx(u,isbl,ism)
   real :: filterx(0:imx-1,0:jmx-1),gr(0:imx-1),gi(0:imx-1)
   real :: kx,ky,sgny,dum,dum1,b2,myuav(0:imx-1)
   real :: myjaca(0:imx-1),jaca(0:imx-1),uav(0:imx-1)
+  complex :: yin1(jmx),yout1(jmx)
 
   xshape=1.0
   yshape=1.0
@@ -5530,16 +5569,20 @@ subroutine fltx(u,isbl,ism)
            temp3dxy(i,j,k)=u(i,j,k)
         enddo
      enddo
+
+!!$omp parallel do private(j,yin1,yout1)
      do i = 0,imx-1
         do j = 0,jmx-1
-           tmpy(j) = temp3dxy(i,j,k)
+           yin(j+1) = temp3dxy(i,j,k)
         end do
-        call ccfft('y',-1,jmx,1.0,tmpy,coefy,worky,0)
+        call dfftw_execute(plany,yin,yout)
+!        call ccfft('y',-1,jmx,1.0,tmpy,coefy,worky,0)
         do j = 0,jmx-1
-           temp3dxy(i,j,k) = tmpy(j)   !rho(ky,x)
+           temp3dxy(i,j,k) = yout(j+1)   !rho(ky,x)
         end do
      end do
-  enddo
+ 
+ enddo
 
   do k = 0,1
      do j = 0,jmx-1
@@ -6116,6 +6159,7 @@ subroutine ldel
         bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
              +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
         psp = wx0*psi(i)+wx1*psi(i+1)
+        fp = wx0*f(i)+wx1*f(i+1)        
         ter = wx0*t0e(i)+wx1*t0e(i+1)
         if(eldu==1)ter = tge
         b=1.-tor+tor*bfldp
@@ -6123,7 +6167,7 @@ subroutine ldel
         u2e(m)=vpar*sqrt(amie*ter)
         mue(m)=0.5*vperp2/b*ter
         eke(m) = mue(m)*b+0.5*emass*u2e(m)**2
-        pze(m) = emass*u2e(m)/b+psp/br0
+        pze(m) = emass*u2e(m)/b*fp/br0+psp/br0
         z0e(m) = z2e(m)
         xie(m) = x2e(m)
         u0e(m) = u2e(m)
@@ -6203,6 +6247,163 @@ subroutine ldel
 
   !      return
 end subroutine ldel
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+subroutine ldeluni
+
+  use gem_com
+  use gem_equil
+  implicit none
+  INTEGER :: i,j,k,m,idum,ns,m1
+  INTEGER :: np_old,np_new
+  real :: vpar,vperp2,r,qr,th,b,cost,ter,vx,vy,vz,v,vmax
+  real :: avgv,myavgv,avgw,myavgw
+  real :: dumx,dumy,dumz,jacp
+  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,psp
+  real :: grp,gxdgyp,zoldp
+  real :: wx0,wx1,wz0,wz1
+
+  vmax = vsphere
+  cnt=mme
+  !   write(*,*)'in loader cnt, mm(1)=',cnt,mm(1)
+
+  myavgv=0.
+  avgv=0.
+  avgw = 0.
+  myavgw = 0.
+
+  m = 0
+  do j = 1,100000000
+
+     !     load a slab of electrons according to J*xn0e...
+
+     dumx=lx*ran2(iseed) !revers(MyId*cnt+j,2) !ran2(iseed)
+     dumy=ly*ran2(iseed) !revers(MyId*cnt+j,3) !ran2(iseed)
+     dumz=lz*ran2(iseed) !revers(MyId*cnt+j,5) !ran2(iseed)
+     dumz = min(dumz,lz-1.e-8)
+     r = lr0+dumx-0.5*lx
+     th = (dumz-lz/2)/(q0*br0)
+     i = int((r-rin)/dr)
+     k = int((pi+th)/dth)
+     jacp = jacob(i,k)
+     vx = 2*(ran2(iseed)-0.5)
+     vy = 2*(ran2(iseed)-0.5)
+     vz = 2*(ran2(iseed)-0.5)
+     v = sqrt(vx*vx+vy*vy+vz*vz)
+
+     if(ran2(iseed)<(0.5*jacp/jacmax) .and. v<1.0)then
+        m = m+1
+        if(m>mme)goto 170
+        x2e(m)=min(dumx,lx-1e-8)
+        y2e(m)=min(dumy,ly-1e-8)
+
+        k = int((th+pi)/dth)
+        wz0 = (-pi+(k+1)*dth-th)/dth
+        wz1 = 1-wz0
+        z2e(m) = wz0*zfnth(k)+wz1*zfnth(k+1)
+        z2e(m)=min(z2e(m),lz-1e-8)
+
+        r=x2e(m)-0.5*lx+lr0
+        cost=cos(th)
+        i = int((r-rin)/dr)
+        wx0 = (rin+(i+1)*dr-r)/dr
+        wx1 = 1.-wx0
+        k = int((th+pi)/dth)
+        wz0 = (-pi+(k+1)*dth-th)/dth
+        wz1 = 1.-wz0
+        bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+             +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
+        psp = wx0*psi(i)+wx1*psi(i+1)
+        fp = wx0*f(i)+wx1*f(i+1)        
+
+        !the velocity is relative to the thermal velocity corresponding to tge
+        ter = tge
+        b=1.-tor+tor*bfldp
+
+        vperp2 = (vx**2+vy**2)*vmax**2 
+        vpar = vz*vmax
+        u2e(m)=vpar*sqrt(ter/tge)
+        mue(m)=0.5*emass*vperp2/b*ter/tge
+        eke(m) = mue(m)*b+0.5*emass*u2e(m)**2
+        pze(m) = emass*u2e(m)/b*fp/br0+psp/br0
+        z0e(m) = z2e(m)
+        xie(m) = x2e(m)
+        u0e(m) = u2e(m)
+        myavgv=myavgv+u2e(m)
+
+        !    LINEAR: perturb w(m) to get linear growth...
+        w2e(m)= 1e-10 !2.*amp*(revers(MyId*cnt+m,13)-0.5) !(ran2(iseed) - 0.5 ) !don't use 0, to have finite apar at n=0 for contour plot
+        !         w2e(m) = amp*u2e(m)/(abs(u2e(m))+0.1)*sin(x2e(m)*pi2/lx)
+        myavgw=myavgw+w2e(m)
+     end if
+  enddo
+170 continue
+  myavgw = myavgw/mme
+  !      write(*,*)'myid ', myid,x2(10),y2(20),u2(20),w2(20)
+  !    subtract off avg. u...
+  call MPI_ALLREDUCE(myavgv,avgv,1, &
+       MPI_REAL8, &
+       MPI_SUM,MPI_COMM_WORLD,ierr)
+  if(idg.eq.1)write(*,*)'all reduce'
+  avgv=avgv/float(tmm(1))
+  do m=1,mme
+     u2e(m)=u2e(m)-avgv
+     x3e(m)=x2e(m)
+     y3e(m)=y2e(m)
+     z3e(m)=z2e(m)
+     u3e(m)=u2e(m)
+     w3e(m)=w2e(m)
+     mue2(m) = mue(m)
+     mue3(m) = mue(m)
+  enddo
+
+  np_old=mme
+  call init_pmove(z2e,np_old,lz,ierr)
+  if(idg.eq.1)write(*,*)'pass init_pmove'
+  !     
+  call pmove(x2e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(x3e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(y2e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(y3e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(z2e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(z3e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(u2e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(u3e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(w2e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(w3e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(mue2,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(mue3,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+
+  call pmove(mue,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(xie,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(z0e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(pze,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(eke,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+  call pmove(u0e,np_old,np_new,ierr)
+  if (ierr.ne.0) call ppexit
+
+  !     
+  call end_pmove(ierr)
+  mme=np_new
+
+  !      return
+end subroutine ldeluni
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 subroutine avge
   use gem_com
@@ -7950,10 +8151,6 @@ end subroutine flty
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 subroutine mdamp(u,n)
-
-  !     calculate mode histories. calculate modes for u at timestep n
-  !     and store in modehis(mode,n).
-
   use gem_com
   use gem_equil
   use gem_fft_wrapper
@@ -8011,10 +8208,6 @@ end subroutine mdamp
 
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 subroutine mdampa(u,n)
-
-  !     calculate mode histories. calculate modes for u at timestep n
-  !     and store in modehis(mode,n).
-
   use gem_com
   use gem_equil
   use gem_fft_wrapper
@@ -8071,10 +8264,6 @@ end subroutine mdampa
 
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 subroutine mdampd(u,v)
-
-  !     calculate mode histories. calculate modes for u at timestep n
-  !     and store in modehis(mode,n).
-
   use gem_com
   use gem_equil
   use gem_fft_wrapper
@@ -8282,3 +8471,1358 @@ subroutine neq8(n,u,v)
   call enfz(v)
 
 end subroutine neq8
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+subroutine gkps_init
+
+  use gem_com
+  use gem_equil
+  use gem_fft_wrapper
+
+  implicit none
+
+  INTEGER :: ns
+  real :: b,gam0,gam1,delyz,th,bf,dum,r,qr,shat
+  real,DIMENSION(1:5) :: b1,b2,ter
+  real :: kx1,kx2,ky
+  real,dimension(:),allocatable :: akx,aky
+  real,dimension(:,:,:,:,:),allocatable:: gamb1,gamb2
+  real :: sgnx,sgny,sz,myfe
+  INTEGER :: i,i1,j,j1,k,k1,l,m,n,ifirst,nstep,ip,INFO
+  INTEGER :: l1,m1,myk,myj,ix,ikx
+  complex :: cdum
+  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp
+  real :: grp,gxdgyp,grdgtp,gthp
+  real :: wx0,wx1,wz0,wz1
+  character(len=70) fname
+  character(len=5) holdmyid
+
+  if(idg==1)then
+     do i = 0,last
+        if(myid==i)then
+           open(9, file='plot',status='unknown',position='append')
+           write(9,*)'enter gkps_init',myid
+           close(9)
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+     end do
+  end if
+
+  write(holdmyid,'(I5.5)') MyId
+  fname='./matrix/'//'mx_phi_'//holdmyid
+  !     form factors....
+  if (igetmx==0) then
+     allocate(akx(0:imx-1),aky(0:jcnt-1), &
+          gamb1(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1), &
+          gamb2(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1))
+     if(idg==1)then
+        do i = 0,last
+           if(myid==i)then
+              open(9, file='plot',status='unknown',position='append')
+              write(9,*)'after allocate gkps_init',myid
+              close(9)
+           end if
+           call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        end do
+     end if
+
+
+     do l=0,im-1
+        do m=0,jcnt-1
+           j = tclr*jcnt+m
+           do i=0,im-1 
+              r = lr0-lx/2+i*dx
+              i1 = int((r-rin)/dr)
+              i1 = min(i1,nr-1)
+              wx0 = (rin+(i1+1)*dr-r)/dr
+              wx1 = 1.-wx0
+              do ns = 1, nsm
+                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
+              enddo
+              do n = 0,1
+                 k = gclr*kcnt+n
+                 k1 = int(k*dz/delz)
+                 k1 = min(k1,ntheta-1)
+                 wz0 = ((k1+1)*delz-dz*k)/delz
+                 wz1 = 1-wz0
+                 th = wz0*thfnz(k1)+wz1*thfnz(k1+1)
+                 k = int((th+pi)/dth)
+                 k = min(k,ntheta-1)
+                 wz0 = (-pi+(k+1)*dth-th)/dth
+                 wz1 = 1.-wz0
+                 bfldp = wx0*wz0*bfld(i1,k)+wx0*wz1*bfld(i1,k+1) &
+                      +wx1*wz0*bfld(i1+1,k)+wx1*wz1*bfld(i1+1,k+1) 
+                 dydrp = wx0*wz0*dydr(i1,k)+wx0*wz1*dydr(i1,k+1) &
+                      +wx1*wz0*dydr(i1+1,k)+wx1*wz1*dydr(i1+1,k+1) 
+                 qhatp = wx0*wz0*qhat(i1,k)+wx0*wz1*qhat(i1,k+1) &
+                      +wx1*wz0*qhat(i1+1,k)+wx1*wz1*qhat(i1+1,k+1) 
+                 grp = wx0*wz0*gr(i1,k)+wx0*wz1*gr(i1,k+1) &
+                      +wx1*wz0*gr(i1+1,k)+wx1*wz1*gr(i1+1,k+1) 
+                 gthp = wx0*wz0*gth(i1,k)+wx0*wz1*gth(i1,k+1) &
+                      +wx1*wz0*gth(i1+1,k)+wx1*wz1*gth(i1+1,k+1) 
+                 gxdgyp = wx0*wz0*gxdgy(i1,k)+wx0*wz1*gxdgy(i1,k+1) &
+                      +wx1*wz0*gxdgy(i1+1,k)+wx1*wz1*gxdgy(i1+1,k+1) 
+                 grdgtp = wx0*wz0*grdgt(i1,k)+wx0*wz1*grdgt(i1,k+1) &
+                      +wx1*wz0*grdgt(i1+1,k)+wx1*wz1*grdgt(i1+1,k+1) 
+
+                 m1 = mstart+int((float(m)+1.0)/2)
+                 if(m==0)m1=0
+                 sgny = isgnft(m)
+
+                 ky=sgny*2.*pi*float(m1)/ly
+                 kx1=pi*float(l)/lx
+                 kx2=-pi*float(l)/lx
+                 bf=bfldp
+
+                 do ns = 1, nsm
+                    b1(ns)=mims(ns)*(kx1*kx1*grp**2 + &
+                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
+                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
+                         +2*kx1*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
+
+                    b2(ns)=mims(ns)*(kx2*kx2*grp**2 + &
+                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
+                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
+                         +2*kx2*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
+
+                    call MPI_BARRIER(MPI_COMM_WORLD,ierr)                    
+
+                    call srcbes(b1(ns),gam0,gam1)
+                    gamb1(ns,l,m,i,n)=gam0
+                    call srcbes(b2(ns),gam0,gam1)
+                    gamb2(ns,l,m,i,n)=gam0
+                 enddo
+
+              enddo
+           enddo
+        enddo
+     enddo
+     
+     if(idg==1)then
+        do i = 0,last
+           if(myid==i)then
+              open(9, file='plot',status='unknown',position='append')
+              write(9,*)'before assembling mxg',myid
+              close(9)
+           end if
+           call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        end do
+     end if
+
+     do k = 0,1
+        do j = 0,jcnt-1
+           do i = 1,imx-1
+              r = lr0-lx/2+i*dx
+              i1 = int((r-rin)/dr)
+              i1 = min(i1,nr-1)
+              wx0 = (rin+(i1+1)*dr-r)/dr
+              wx1 = 1.-wx0
+              do ns = 1, nsm
+                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
+              enddo
+              do ix = 1,imx-1
+                 mxg(i,ix,j,k) = 0.0
+                 if(i==ix)mxg(i,ix,j,k) = fradi*gn0e(i)*cn0e/gt0e(i)
+                 do ikx = 0,imx-1
+                    do ns = 1, nsm
+                       mxg(i,ix,j,k) = mxg(i,ix,j,k)+q(ns)*sin(ix*ikx*pi/imx)* &
+                            ((1-gamb1(ns,ikx,j,i,k))*exp(IU*ikx*i*pi/imx)- &
+                            (1-gamb2(ns,ikx,j,i,k))*exp(-IU*ikx*i*pi/imx)) &
+                            /ter(ns)*cn0s(ns)*gn0s(ns,i)/(IU*imx)
+                    end do
+                 end do
+              end do
+           end do
+        end do
+     end do
+     if(idg==1)then
+        do i = 0,last
+           if(myid==i)then
+              open(9, file='plot',status='unknown',position='append')
+              write(9,*)'before zgetrf',myid
+              close(9)
+           end if
+           call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        end do
+     end if
+
+!$omp parallel do private(k,j)
+     do i = 0,jcnt*2-1
+        k = int(i/jcnt)
+        j = i-k*jcnt
+        call ZGETRF(imx-1,imx-1,mxg(:,:,j,k),imx-1,ipivg(:,:,j,k),INFO )
+     end do
+     if(idg==1)then
+        do i = 0,last
+           if(myid==i)then
+              open(9, file='plot',status='unknown',position='append')
+              write(9,*)'after zgetrf',myid
+              close(9)
+           end if
+           call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        end do
+     end if
+
+ open(10000+MyId,file=fname,form='unformatted',status='unknown')
+ do i = 1,imx-1
+    do j = 1,imx-1
+      do m = 0,jcnt-1
+        do k = 0,1
+        write(10000+MyId)mxg(i,j,m,k),ipivg(i,j,m,k)
+        end do
+      end do
+    end do
+ end do
+ close(10000+myid)
+
+endif
+
+if(igetmx.eq.1) then
+ open(10000+MyId,file=fname,form='unformatted',status='old')
+ do i = 1,imx-1
+    do j = 1,imx-1
+      do m = 0,jcnt-1
+        do k = 0,1
+        read(10000+MyId)mxg(i,j,m,k),ipivg(i,j,m,k)
+        end do
+      end do
+    end do
+ end do
+ close(10000+myid)
+end if
+
+  if(idg==1)write(*,*)'pass form factors'
+end subroutine gkps_init
+
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+subroutine ezamp_init
+
+  use gem_com
+  use gem_equil
+  use gem_fft_wrapper
+  implicit none
+  real :: b,b2,gam0,gam1,th,delyz,bf,rkper,r,qr,shat
+  real :: kx,ky
+  real,dimension(:),allocatable :: akx,aky
+  complex,dimension(:,:,:,:),allocatable:: nab1,nab2
+  real :: sgnx,sgny,sz,myfe
+  INTEGER :: i,i1,j,j1,k,k1,l,m,n,ifirst,nstep,ip,INFO
+  INTEGER :: l1,m1,myk,myj,ix,ikx,iext
+  real :: dum
+  real :: grp,gthp,gxdgyp,dydrp,qhatp,grdgtp,bfldp
+  real :: wx0,wx1,wz0,wz1
+  character(len=70) fname
+  character(len=5) holdmyid
+
+  write(holdmyid,'(I5.5)') MyId
+  fname='./matrix/'//'mx_apa_'//holdmyid
+  if (igetmx==0) then
+     allocate(akx(0:imx-1),aky(0:jcnt-1),nab1(0:imx-1,0:jcnt-1,0:imx-1,0:1))
+     allocate(nab2(0:imx-1,0:jcnt-1,0:imx-1,0:1))
+
+
+     do l=0,im-1
+        do m=0,jcnt-1
+           j = tclr*jcnt+m
+           do i=0,im-1
+              r = lr0-lx/2+i*dx
+              do n = 0,1
+                 k = gclr*kcnt+n
+                 k1 = int(dz*k/delz)
+                 k1 = min(k1,ntheta-1)
+                 wz0 = ((k1+1)*delz-dz*k)/delz
+                 wz1 = 1-wz0
+                 th = wz0*thfnz(k1)+wz1*thfnz(k1+1)
+                 i1 = int((r-rin)/dr)
+                 i1 = min(i1,nr-1)
+                 wx0 = (rin+(i1+1)*dr-r)/dr
+                 wx1 = 1.-wx0
+                 k1 = int((th+pi)/dth)
+                 k1 = min(k1,ntheta-1)
+                 wz0 = (-pi+(k1+1)*dth-th)/dth
+                 wz1 = 1.-wz0
+                 bfldp = wx0*wz0*bfld(i1,k1)+wx0*wz1*bfld(i1,k1+1) &
+                      +wx1*wz0*bfld(i1+1,k1)+wx1*wz1*bfld(i1+1,k1+1) 
+                 dydrp = wx0*wz0*dydr(i1,k1)+wx0*wz1*dydr(i1,k1+1) &
+                      +wx1*wz0*dydr(i1+1,k1)+wx1*wz1*dydr(i1+1,k1+1) 
+                 qhatp = wx0*wz0*qhat(i1,k1)+wx0*wz1*qhat(i1,k1+1) &
+                      +wx1*wz0*qhat(i1+1,k1)+wx1*wz1*qhat(i1+1,k1+1) 
+                 grp = wx0*wz0*gr(i1,k1)+wx0*wz1*gr(i1,k1+1) &
+                      +wx1*wz0*gr(i1+1,k1)+wx1*wz1*gr(i1+1,k1+1) 
+                 gthp = wx0*wz0*gth(i1,k1)+wx0*wz1*gth(i1,k1+1) &
+                      +wx1*wz0*gth(i1+1,k1)+wx1*wz1*gth(i1+1,k1+1) 
+                 gxdgyp = wx0*wz0*gxdgy(i1,k1)+wx0*wz1*gxdgy(i1,k1+1) &
+                      +wx1*wz0*gxdgy(i1+1,k1)+wx1*wz1*gxdgy(i1+1,k1+1) 
+                 grdgtp = wx0*wz0*grdgt(i1,k1)+wx0*wz1*grdgt(i1,k1+1) &
+                      +wx1*wz0*grdgt(i1+1,k1)+wx1*wz1*grdgt(i1+1,k1+1) 
+
+                 m1 = mstart+int((float(m)+1.0)/2)   
+                 if(m==0)m1=0       
+                 sgny = isgnft(m)
+                 ky=sgny*2.*pi*float(m1)/ly
+                 kx=pi*float(l)/lx
+                 akx(l) = kx
+                 aky(m) = ky
+                 bf=bfldp
+                 b=mims(1)*(kx*kx*grp**2 + &
+                      ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
+                      +2*dydrp*lr0/q0*qhatp*grdgtp) &
+                      +2*kx*ky*gxdgyp)/bf/bf
+
+                 nab1(l,m,i,n) = kx**2*grp**2+ky**2*  &
+                      (dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
+                      +2*dydrp*lr0/q0*qhatp*grdgtp)
+
+                 nab2(l,m,i,n) = -IU*ky*kx*2*gxdgyp
+              enddo
+           enddo
+        enddo
+     enddo
+
+     do k = 0,1
+        do j = 0,jcnt-1
+           do i = 1,imx-1
+              do ix = 1,imx-1
+                 mxa(i,ix,j,k) = 0.
+                 if(i==ix)mxa(i,ix,j,k) = beta*(amie*gn0e(i)*cn0e+q(1)*q(1)/mims(1)*gn0s(1,i)*cn0s(1)*isiap)
+                 do ikx = 1,imx-1
+                    mxa(i,ix,j,k) = mxa(i,ix,j,k) &
+                         +nab1(ikx,j,i,k) &
+                         *sin(ix*ikx*pi/imx)*sin(i*ikx*pi/imx)*2.0/imx &
+                         +nab2(ikx,j,i,k) &
+                         *sin(ix*ikx*pi/imx)*cos(i*ikx*pi/imx)*2.0/imx
+                 end do
+              end do
+           end do
+        end do
+     end do
+
+!$omp parallel do private(k,j)
+     do i = 0,jcnt*2-1
+        k = int(i/jcnt)
+        j = i-k*jcnt
+        call ZGETRF(imx-1,imx-1,mxa(:,:,j,k),imx-1,ipiva(:,:,j,k),INFO )
+     end do
+
+open(20000+MyId,file=fname,form='unformatted',status='unknown')
+do i = 1,imx-1
+    do j = 1,imx-1
+      do m = 0,jcnt-1
+        do k = 0,1
+        write(20000+MyId)mxa(i,j,m,k),ipiva(i,j,m,k)
+        end do
+      end do
+    end do
+ end do
+ close(20000+myid)
+
+endif
+
+if(igetmx.eq.1) then
+ open(20000+MyId,file=fname,form='unformatted',status='old')
+ do i = 1,imx-1
+    do j = 1,imx-1
+      do m = 0,jcnt-1
+        do k = 0,1
+        read(20000+MyId)mxa(i,j,m,k),ipiva(i,j,m,k)
+        end do
+      end do
+    end do
+ end do
+ close(20000+myid)
+end if
+
+end subroutine ezamp_init
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+subroutine dpdt_init
+  use gem_com
+  use gem_equil
+  use gem_fft_wrapper
+  implicit none
+  INTEGER :: ns
+  real :: b,gam0,gam1,delyz,th,bf,dum,r,qr,shat
+  real,DIMENSION(1:5) :: b1,b2,ter
+  real :: kx1,kx2,ky
+  real,dimension(:),allocatable :: akx,aky
+  real,dimension(:,:,:,:,:),allocatable:: gamb1,gamb2
+  real :: sgnx,sgny,sz,myfe,u(0:imx,0:jmx,0:1)
+  INTEGER :: i,i1,j,j1,k,k1,l,m,n,ifirst,nstep,ip,INFO
+  INTEGER :: l1,m1,myk,myj,ix,ikx
+  complex :: cdum
+  real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp
+  real :: grp,gxdgyp,grdgtp,gthp
+  real :: wx0,wx1,wz0,wz1
+  character(len=70) fname
+  character(len=5) holdmyid
+
+  if(idg==1)write(*,*)'enter gkps'
+
+  !     form factors....
+  write(holdmyid,'(I5.5)') MyId
+  fname='./matrix/'//'mx_dpt_'//holdmyid
+  if (igetmx==0) then
+     allocate(akx(0:imx-1),aky(0:jcnt-1),&
+          gamb1(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1),&
+          gamb2(1:5,0:imx-1,0:jcnt-1,0:imx-1,0:1))
+
+
+     do l=0,im-1
+        do m=0,jcnt-1
+           j = tclr*jcnt+m
+           do i=0,im-1 
+              r = lr0-lx/2+i*dx
+              i1 = int((r-rin)/dr)
+              i1 = min(i1,nr-1)
+              wx0 = (rin+(i1+1)*dr-r)/dr
+              wx1 = 1.-wx0
+              do ns = 1, nsm
+                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
+              enddo
+              do n = 0,1
+                 k = gclr*kcnt+n
+                 k1 = int(k*dz/delz)
+                 k1 = min(k1,ntheta-1)
+                 wz0 = ((k1+1)*delz-dz*k)/delz
+                 wz1 = 1-wz0
+                 th = wz0*thfnz(k1)+wz1*thfnz(k1+1)
+                 k = int((th+pi)/dth)
+                 k = min(k,ntheta-1)
+                 wz0 = (-pi+(k+1)*dth-th)/dth
+                 wz1 = 1.-wz0
+                 bfldp = wx0*wz0*bfld(i1,k)+wx0*wz1*bfld(i1,k+1) &
+                      +wx1*wz0*bfld(i1+1,k)+wx1*wz1*bfld(i1+1,k+1) 
+                 dydrp = wx0*wz0*dydr(i1,k)+wx0*wz1*dydr(i1,k+1) &
+                      +wx1*wz0*dydr(i1+1,k)+wx1*wz1*dydr(i1+1,k+1) 
+                 qhatp = wx0*wz0*qhat(i1,k)+wx0*wz1*qhat(i1,k+1) &
+                      +wx1*wz0*qhat(i1+1,k)+wx1*wz1*qhat(i1+1,k+1) 
+                 grp = wx0*wz0*gr(i1,k)+wx0*wz1*gr(i1,k+1) &
+                      +wx1*wz0*gr(i1+1,k)+wx1*wz1*gr(i1+1,k+1) 
+                 gthp = wx0*wz0*gth(i1,k)+wx0*wz1*gth(i1,k+1) &
+                      +wx1*wz0*gth(i1+1,k)+wx1*wz1*gth(i1+1,k+1) 
+                 gxdgyp = wx0*wz0*gxdgy(i1,k)+wx0*wz1*gxdgy(i1,k+1) &
+                      +wx1*wz0*gxdgy(i1+1,k)+wx1*wz1*gxdgy(i1+1,k+1) 
+                 grdgtp = wx0*wz0*grdgt(i1,k)+wx0*wz1*grdgt(i1,k+1) &
+                      +wx1*wz0*grdgt(i1+1,k)+wx1*wz1*grdgt(i1+1,k+1) 
+
+                 m1 = mstart+int((float(m)+1.0)/2)                                                                                       
+                 if(m==0)m1=0                                                                                                            
+                 sgny = isgnft(m)                                                                                                        
+
+                 ky=sgny*2.*pi*float(m1)/ly
+                 kx1=pi*float(l)/lx
+                 kx2=-pi*float(l)/lx
+                 bf=bfldp
+                 do ns = 1, nsm
+                    b1(ns)=mims(ns)*(kx1*kx1*grp**2 + &
+                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
+                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
+                         +2*kx1*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
+
+                    b2(ns)=mims(ns)*(kx2*kx2*grp**2 + &
+                         ky*ky*(dydrp**2*grp**2+(lr0/q0*qhatp*gthp)**2 &
+                         +2*dydrp*lr0/q0*qhatp*grdgtp) &
+                         +2*kx2*ky*gxdgyp)/(bf*bf)*ter(ns)/(q(ns)*q(ns))
+
+                    call srcbes(b1(ns),gam0,gam1)
+                    gamb1(ns,l,m,i,n)=gam0
+                    call srcbes(b2(ns),gam0,gam1)
+                    gamb2(ns,l,m,i,n)=gam0
+                 end do
+              enddo
+           enddo
+        enddo
+     enddo
+
+     do k = 0,1
+        do j = 0,jcnt-1
+           do i = 1,imx-1
+              r = lr0-lx/2+i*dx
+              i1 = int((r-rin)/dr)
+              i1 = min(i1,nr-1)
+              wx0 = (rin+(i1+1)*dr-r)/dr
+              wx1 = 1.-wx0
+              do ns = 1, nsm
+                 ter(ns) = wx0*t0s(ns,i1)+wx1*t0s(ns,i1+1)
+              enddo
+              do ix = 1,imx-1
+                 mxd(i,ix,j,k) = 0.
+                 do ikx = 0,imx-1
+                    do ns = 1, nsm
+                       mxd(i,ix,j,k) = mxd(i,ix,j,k)+q(ns)*sin(ix*ikx*pi/imx)* &
+                            ((1-gamb1(ns,ikx,j,i,k))*exp(IU*ikx*i*pi/imx)- &
+                            (1-gamb2(ns,ikx,j,i,k))*exp(-IU*ikx*i*pi/imx)) &
+                            /ter(ns)*cn0s(ns)*gn0s(ns,i)/(IU*imx)
+                    end do
+                 end do
+              end do
+           end do
+        end do
+     end do
+
+!$omp parallel do private(k,j)
+     do i = 0,jcnt*2-1
+        k = int(i/jcnt)
+        j = i-k*jcnt
+        call ZGETRF(imx-1,imx-1,mxd(:,:,j,k),imx-1,ipivd(:,:,j,k),INFO )
+     end do
+
+open(30000+MyId,file=fname,form='unformatted',status='unknown')
+ do i = 1,imx-1
+    do j = 1,imx-1
+      do m = 0,jcnt-1
+        do k = 0,1
+        write(30000+MyId)mxd(i,j,m,k),ipivd(i,j,m,k)
+        end do
+      end do
+    end do
+ end do
+ close(30000+myid)
+
+endif
+
+if(igetmx==1)then
+ open(30000+MyId,file=fname,form='unformatted',status='old')
+ do i = 1,imx-1
+    do j = 1,imx-1
+      do m = 0,jcnt-1
+        do k = 0,1
+        read(30000+MyId)mxd(i,j,m,k),ipivd(i,j,m,k)
+        end do
+      end do
+    end do
+ end do
+ close(30000+myid)
+end if
+
+end subroutine dpdt_init
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine flut
+  use gem_com
+  use gem_equil
+  implicit none
+  INTEGER :: m,n,ip,i,i1,j,k,j1,j2,j3,j4,j5,nobge
+  real :: wx0,wx1,wz0,wz1,bfldp,ter,gdum,wght
+  real :: favx=1,favy=1,favz=1,fave=0,favl=1
+  real :: wx(0:1),wy(0:1),wz(0:1),we(0:1),wp(0:1),vte
+  real :: r,qr,th,jacp,b,vfac,js,jv,dum,dum1,dum2,pidum,vel
+  real :: xt,yt,zt,emac,dvfac,dlamb,lamb,dely,g,myavewe,avwe
+  integer :: isign,il,ie,bfcnt,mynobge
+  real :: w(0:1,0:1,0:1,0:1,0:1)
+  real :: xdot,ydot,zdot,pzdot,grcgtp,radiusp,qhatp,fp,jfnp,psipp
+  real :: wy0,wy1,x000,x001,x010,x011,x100,x101,x110,x111  
+  real :: exp1,eyp,delbxp,delbyp,vpar,vxdum,ezp,dadzp
+
+  if(iflut==1 .and. iexb==1 .and. ipara==0)return
+  emac = 9
+  dvfac = emac/negrd
+  dlamb = 2.0/nlgrd
+  bfcnt = (icgp+1)*(jcgp+1)*(negrd+1)*(nlgrd+1)
+
+!find the temporary position due to nonlinear terms
+
+!$omp parallel do &
+!$omp private(i,j,k,r,th,wx0,wx1,wy0,wy1,wz0,wz1,grcgtp,bfldp,radiusp,qhatp,fp,jfnp,psipp,b,xt,yt) &
+!$omp private(x000,x001,x010,x011,x100,x101,x110,x111,exp1,eyp,ezp,delbxp,delbyp,dadzp,vpar,dum2,vxdum,xdot,ydot,pzdot)
+  do m=1,mme
+     r=x3e(m)-0.5*lx+lr0
+
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+     grcgtp = wx0*wz0*grcgt(i,k)+wx0*wz1*grcgt(i,k+1) &
+          +wx1*wz0*grcgt(i+1,k)+wx1*wz1*grcgt(i+1,k+1) 
+     bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
+     radiusp = wx0*wz0*radius(i,k)+wx0*wz1*radius(i,k+1) &
+          +wx1*wz0*radius(i+1,k)+wx1*wz1*radius(i+1,k+1) 
+     qhatp = wx0*wz0*qhat(i,k)+wx0*wz1*qhat(i,k+1) &
+          +wx1*wz0*qhat(i+1,k)+wx1*wz1*qhat(i+1,k+1) 
+
+     fp = wx0*f(i)+wx1*f(i+1)    
+     jfnp = wz0*jfn(k)+wz1*jfn(k+1)    
+     psipp = wx0*psip(i)+wx1*psip(i+1)
+     b=1.-tor+tor*bfldp
+
+     xt = x3e(m)
+     yt = y3e(m)
+
+     i=int(xt/dx)
+     j=int(yt/dy)
+     k=0 !int(z3e(m)/dz)-gclr*kcnt
+
+     wx0=float(i+1)-xt/dx 
+     wx1=1.-wx0
+     wy0=float(j+1)-yt/dy
+     wy1=1.-wy0
+     wz0=float(gclr*kcnt+k+1)-z3e(m)/dz
+     wz1=1.-wz0
+     x000=wx0*wy0*wz0
+     x001=wx0*wy0*wz1
+     x010=wx0*wy1*wz0
+     x011=wx0*wy1*wz1
+     x100=wx1*wy0*wz0
+     x101=wx1*wy0*wz1
+     x110=wx1*wy1*wz0
+     x111=wx1*wy1*wz1
+     exp1 = x000*ex(i,j,k) + x100*ex(i+1,j,k)  &
+           + x010*ex(i,j+1,k) + x110*ex(i+1,j+1,k) + &
+           x001*ex(i,j,k+1) + x101*ex(i+1,j,k+1) +   &
+           x011*ex(i,j+1,k+1) + x111*ex(i+1,j+1,k+1)
+
+     eyp = x000*ey(i,j,k) + x100*ey(i+1,j,k)  &
+           + x010*ey(i,j+1,k) + x110*ey(i+1,j+1,k) + &
+           x001*ey(i,j,k+1) + x101*ey(i+1,j,k+1) +   &
+           x011*ey(i,j+1,k+1) + x111*ey(i+1,j+1,k+1)
+
+     ezp = x000*ez(i,j,k) + x100*ez(i+1,j,k)  &
+           + x010*ez(i,j+1,k) + x110*ez(i+1,j+1,k) + &
+           x001*ez(i,j,k+1) + x101*ez(i+1,j,k+1) +   &
+           x011*ez(i,j+1,k+1) + x111*ez(i+1,j+1,k+1)
+
+     delbxp = x000*delbx(i,j,k) + x100*delbx(i+1,j,k)  &
+           + x010*delbx(i,j+1,k) + x110*delbx(i+1,j+1,k) + &
+           x001*delbx(i,j,k+1) + x101*delbx(i+1,j,k+1) +   &
+           x011*delbx(i,j+1,k+1) + x111*delbx(i+1,j+1,k+1)
+
+     delbyp = x000*delby(i,j,k) + x100*delby(i+1,j,k)  &
+           + x010*delby(i,j+1,k) + x110*delby(i+1,j+1,k) + &
+           x001*delby(i,j,k+1) + x101*delby(i+1,j,k+1) +   &
+           x011*delby(i,j+1,k+1) + x111*delby(i+1,j+1,k+1)
+
+     dadzp = x000*dadz(i,j,k) + x100*dadz(i+1,j,k)  &
+           + x010*dadz(i,j+1,k) + x110*dadz(i+1,j+1,k) + &
+           x001*dadz(i,j,k+1) + x101*dadz(i+1,j,k+1) +   &
+           x011*dadz(i,j+1,k+1) + x111*dadz(i+1,j+1,k+1)
+
+     vpar = u3e(m)
+     dum2 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
+     vxdum = (eyp/b*(1-iexb)+vpar/b*delbxp*(1-iflut))*dum2
+     xdot = vxdum
+     ydot = (-exp1/b*(1-iexb)+vpar/b*delbyp*(1-iflut))*dum2
+     zdot =  vpar*q0*br0/radiusp/b*psipp*grcgtp/jfnp
+     pzdot = qel/emass*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp + qel/emass*zdot*dadzp
+
+     utmp(m) = u3e(m)+dte*pzdot*ipara     
+     xtmp(m) = x3e(m) + dte*xdot
+     if(xtmp(m) < 0. .or. xtmp(m) > lx)xtmp(m) = x3e(m)
+     ytmp(m) = y3e(m) + dte*ydot
+     ytmp(m) = modulo(ytmp(m),ly)
+end do
+
+
+
+
+
+
+!loop to get h1 from markers at (x,y,vpar) without special nonlinear terms
+  thish = 0.
+  thisg = 0.
+
+!$omp parallel do &
+!$omp private(i,j,k,ie,il,j1,j2,j3,j4,j5,r,th,wx0,wx1,wy0,wy1,wz0,wz1,w,wx,wy,wz,we,wp,bfldp,jfnp,jacp,ter,b,vfac,vel,lamb,xt,yt) &
+!$omp private(js,vte,jv,dum) &
+  do m=1,mme
+     r=x3e(m)-0.5*lx+lr0
+
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+     bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1)
+     jfnp = wz0*jfn(k)+wz1*jfn(k+1)
+     jacp = wx0*wz0*jacob(i,k)+wx0*wz1*jacob(i,k+1) &
+          +wx1*wz0*jacob(i+1,k)+wx1*wz1*jacob(i+1,k+1)
+     jacp = jacp*jfnp
+     ter = wx0*t0e(i)+wx1*t0e(i+1)
+     b=1.-tor+tor*bfldp
+     vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)/ter
+     vel = sqrt(2.*vfac*ter/emass)
+     lamb = u3e(m)/(vel+1.e-6)
+
+     xt = x3e(m)
+     i=int(xt/dxcgp)
+     i = min(i,icgp-1)
+     yt = y3e(m)
+     j = int(y3e(m)/dycgp)
+     j = min(j,jcgp-1)
+     k=0
+     wx(0)=1.-favx+(float(i+1)-xt/dxcgp)*favx
+     wx(1)=1.-wx(0)
+     wy(0)=1.-favy+(float(j+1)-yt/dycgp)*favy
+     wy(1)=1.-wy(0)
+     wz(0)=1.-favz+(float(gclr*kcnt+k+1)-z3e(m)/dz)*favz
+     wz(1)=1.-wz(0)
+     ie = int(vfac/dvfac)
+     il = int((lamb+1.0)/dlamb)
+     il = min(il,nlgrd-1)
+     if(ie.gt.(negrd-1)) goto 100
+
+     we(0) = 1.-fave+(float(ie+1)-vfac/dvfac)*fave
+     we(1) = 1.-we(0)
+     wp(0) = 1-favl+(float(il+1)-(lamb+1.)/dlamb)*favl
+     wp(1) = 1.-wp(0)
+
+     do j1 = 0,1
+        do j2 = 0,1
+           do j3 = 0,1
+              do j4 = 0,1
+                 do j5 = 0,1
+                    w(j1,j2,j3,j4,j5) = wx(j1)*wy(j2)*wz(j3)*we(j4)*wp(j5)
+                 end do
+              end do
+           end do
+        end do
+     end do
+
+
+     js = jacp
+     vte = sqrt(ter/emass)
+     jv = sqrt(2.)*vte**3*sqrt(vfac+1.e-3)
+     dum = totvol/tmm(2)/(dxcgp*dycgp*dz*dvfac*dlamb*js*jv)
+
+     do j1 = 0,1
+        do j2 = 0,1
+           do j3 = 0,1
+              do j4 = 0,1
+                 do j5 = 0,1
+!$omp atomic
+                    thish(i+j1,j+j2,j3,ie+j4,il+j5) =  &
+                         thish(i+j1,j+j2,j3,ie+j4,il+j5) + &
+                         dum*w(j1,j2,j3,j4,j5)*w3e(m)
+!$omp atomic
+                    thisg(i+j1,j+j2,j3,ie+j4,il+j5) =  &
+                         thisg(i+j1,j+j2,j3,ie+j4,il+j5) + &
+                         dum*w(j1,j2,j3,j4,j5)
+                 end do
+              end do
+           end do
+        end do
+     end do
+100  continue
+  end do
+
+!use ngp in z to avoid enforce() communication
+  do i = 0,icgp
+     do j = 0,jcgp
+        do ie = 0,negrd
+           do il = 0,nlgrd
+              thish(i,j,0,ie,il) = thish(i,j,0,ie,il)+thish(i,j,1,ie,il)
+              thish(i,j,1,ie,il) = thish(i,j,0,ie,il)
+              thisg(i,j,0,ie,il) = thisg(i,j,0,ie,il)+thisg(i,j,1,ie,il)
+              thisg(i,j,1,ie,il) = thisg(i,j,0,ie,il)
+           end do
+        end do
+     end do
+  enddo
+
+
+  if(idg==1)write(*,*)'before reduce'
+  call MPI_ALLREDUCE(thish,  &
+       toth1,             &
+       2*bfcnt,MPI_REAL8,       &
+       MPI_SUM,GRID_COMM,ierr)
+
+  call MPI_ALLREDUCE(thisg, totg, &
+       2*bfcnt,MPI_REAL8,       &
+       MPI_SUM,GRID_COMM,ierr)
+
+
+
+
+!loop to get h2 from markers at (x,y,vpar) WITH special nonlinear terms
+  thish = 0.
+
+!$omp parallel do &
+!$omp private(i,j,k,ie,il,j1,j2,j3,j4,j5,r,th,wx0,wx1,wy0,wy1,wz0,wz1,w,wx,wy,wz,we,wp,bfldp,jfnp,jacp,ter,b,vfac,vel,lamb,xt,yt) &
+!$omp private(js,vte,jv,dum) &
+  do m=1,mme
+     r=xtmp(m)-0.5*lx+lr0
+
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+     bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1)
+     jfnp = wz0*jfn(k)+wz1*jfn(k+1)
+     jacp = wx0*wz0*jacob(i,k)+wx0*wz1*jacob(i,k+1) &
+          +wx1*wz0*jacob(i+1,k)+wx1*wz1*jacob(i+1,k+1)
+     jacp = jacp*jfnp
+     ter = wx0*t0e(i)+wx1*t0e(i+1)
+     b=1.-tor+tor*bfldp
+     vfac = 0.5*(emass*utmp(m)**2 + 2.*mue3(m)*b)/ter
+     vel = sqrt(2.*vfac*ter/emass)
+     lamb = utmp(m)/(vel+1.e-6)
+
+     xt = xtmp(m)
+     i=int(xt/dxcgp)
+     i = min(i,icgp-1)
+     yt = ytmp(m)
+     j = int(ytmp(m)/dycgp)
+     j = min(j,jcgp-1)
+     k=0
+     wx(0)=1.-favx+(float(i+1)-xt/dxcgp)*favx
+     wx(1)=1.-wx(0)
+     wy(0)=1.-favy+(float(j+1)-yt/dycgp)*favy
+     wy(1)=1.-wy(0)
+     wz(0)=1.-favz+(float(gclr*kcnt+k+1)-z3e(m)/dz)*favz
+     wz(1)=1.-wz(0)
+     ie = int(vfac/dvfac)
+     il = int((lamb+1.0)/dlamb)
+     il = min(il,nlgrd-1)
+     if(ie.gt.(negrd-1))goto 101
+
+     we(0) = 1.-fave+(float(ie+1)-vfac/dvfac)*fave
+     we(1) = 1.-we(0)
+     wp(0) = 1-favl+(float(il+1)-(lamb+1.)/dlamb)*favl
+     wp(1) = 1.-wp(0)
+
+     do j1 = 0,1
+        do j2 = 0,1
+           do j3 = 0,1
+              do j4 = 0,1
+                 do j5 = 0,1
+                    w(j1,j2,j3,j4,j5) = wx(j1)*wy(j2)*wz(j3)*we(j4)*wp(j5)
+                 end do
+              end do
+           end do
+        end do
+     end do
+
+
+     js = jacp
+     vte = sqrt(ter/emass)
+     jv = sqrt(2.)*vte**3*sqrt(vfac+1.e-3)
+     dum = totvol/tmm(2)/(dxcgp*dycgp*dz*dvfac*dlamb*js*jv)
+
+     do j1 = 0,1
+        do j2 = 0,1
+           do j3 = 0,1
+              do j4 = 0,1
+                 do j5 = 0,1
+!$omp atomic
+                    thish(i+j1,j+j2,j3,ie+j4,il+j5) =  &
+                         thish(i+j1,j+j2,j3,ie+j4,il+j5) + &
+                         dum*w(j1,j2,j3,j4,j5)*w3e(m)
+                 end do
+              end do
+           end do
+        end do
+     end do
+101  continue
+  end do
+
+  if(idg==1)write(*,*)'before enforce'
+
+
+  do i = 0,icgp
+     do j = 0,jcgp
+        do ie = 0,negrd
+           do il = 0,nlgrd
+              thish(i,j,0,ie,il) = thish(i,j,0,ie,il)+thish(i,j,1,ie,il)
+              thish(i,j,1,ie,il) = thish(i,j,0,ie,il)
+           end do
+        end do
+     end do
+  enddo
+
+  call MPI_ALLREDUCE(thish,  &
+       toth2,             &
+       2*bfcnt,MPI_REAL8,       &
+       MPI_SUM,GRID_COMM,ierr)
+
+
+
+
+!update weights due to special NL terms
+
+!$omp parallel do &
+!$omp private(i,j,k,ie,il,j1,j2,j3,j4,j5,r,th,wx0,wx1,wy0,wy1,wz0,wz1,w,wx,wy,wz,we,wp,bfldp,jfnp,jacp,ter,b,vfac,vel,lamb,xt,yt) &
+!$omp private(vte,dum,gdum,wght) &
+  do m=1,mme
+     wght = 0.
+     r=x3e(m)-0.5*lx+lr0
+
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+     bfldp = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1)
+     jfnp = wz0*jfn(k)+wz1*jfn(k+1)
+     jacp = wx0*wz0*jacob(i,k)+wx0*wz1*jacob(i,k+1) &
+          +wx1*wz0*jacob(i+1,k)+wx1*wz1*jacob(i+1,k+1)
+     jacp = jacp*jfnp
+     ter = wx0*t0e(i)+wx1*t0e(i+1)
+     b=1.-tor+tor*bfldp
+     vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)/ter
+     vel = sqrt(2.*vfac*ter/emass)
+     lamb = u3e(m)/(vel+1.e-6)
+
+     xt = x3e(m)
+     i=int(xt/dxcgp)
+     i = min(i,icgp-1)
+     yt = y3e(m)
+     j = int(y3e(m)/dycgp)
+     j = min(j,jcgp-1)
+     k=0
+     wx(0)=1.-favx+(float(i+1)-xt/dxcgp)*favx
+     wx(1)=1.-wx(0)
+     wy(0)=1.-favy+(float(j+1)-yt/dycgp)*favy
+     wy(1)=1.-wy(0)
+     wz(0)=1.-favz+(float(gclr*kcnt+k+1)-z3e(m)/dz)*favz
+     wz(1)=1.-wz(0)
+     ie = int(vfac/dvfac)
+     il = int((lamb+1.0)/dlamb)
+     il = min(il,nlgrd-1)
+     if(ie.gt.(negrd-2)) goto 300
+
+     we(0) = 1.-fave+(float(ie+1)-vfac/dvfac)*fave
+     we(1) = 1.-we(0)
+     wp(0) = 1-favl+(float(il+1)-(lamb+1.)/dlamb)*favl
+     wp(1) = 1.-wp(0)
+
+     do j1 = 0,1
+        do j2 = 0,1
+           do j3 = 0,1
+              do j4 = 0,1
+                 do j5 = 0,1
+                    w(j1,j2,j3,j4,j5) = wx(j1)*wy(j2)*wz(j3)*we(j4)*wp(j5)
+                 end do
+              end do
+           end do
+        end do
+     end do
+
+     dum = 0.
+     gdum = 0.
+
+     do j1 = 0,1
+        do j2 = 0,1
+           do j3 = 0,1
+              do j4 = 0,1
+                 do j5 = 0,1
+                    dum=dum+(toth2(i+j1,j+j2,j3,ie+j4,il+j5) - toth1(i+j1,j+j2,j3,ie+j4,il+j5)) * w(j1,j2,j3,j4,j5)
+                    gdum=gdum+totg(i+j1,j+j2,j3,ie+j4,il+j5) * w(j1,j2,j3,j4,j5)
+                 end do
+              end do
+           end do
+        end do
+     end do
+     if(gdum==0.0)write(*,*)dum,gdum
+     wght = dum/gdum
+     
+300  continue
+     w3e(m) = w3e(m)+wght
+     w2e(m) = w3e(m)
+  end do
+
+end subroutine flut
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!average of we at (r, eps)
+subroutine weatxeps(igtilde)
+  use gem_com
+  use gem_equil
+  implicit none
+  INTEGER :: m,i,j,k,ie,bfcnt,igtilde,ntot
+  real :: r,th,wx0,wx1,wz0,wz1,b,ter,xnp,xt,vfac,vfac1,vfac2,xn,dn,totn,gdum,fdum,v,dv,dum
+  real :: myavw(0:nxsrc-1,0:nesrc-1),myg(0:nxsrc-1,0:nesrc-1)
+  real :: avw(0:nxsrc-1,0:nesrc-1),g(0:nxsrc-1,0:nesrc-1),phasvol(0:nxsrc-1,0:nesrc-1)
+  real :: am(0:nesrc-1,1:nzcrt)
+  real :: myjac(0:imx),totjac(0:imx)
+  
+  bfcnt = nxsrc*nesrc
+
+  myavw = 0.
+  myg = 0.
+!$omp parallel do &
+!$omp private(i,k,ie,r,th,wx0,wx1,wz0,wz1,b,ter,xnp,vfac,xt) 
+  do m=1,mme
+     r=x3e(m)-0.5*lx+lr0
+
+     k = int(z3e(m)/delz)
+     wz0 = ((k+1)*delz-z3e(m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+
+     b = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
+     ter = wx0*t0e(i)+wx1*t0e(i+1)        
+     xnp = wx0*xn0e(i)+wx1*xn0e(i+1)        
+
+     vfac = 0.5*(emass*u3e(m)**2 + 2.*mue3(m)*b)/ter
+
+     xt = x3e(m)
+     i=int(xt/dxsrc)
+     i = min(i,nxsrc-1)
+     ie = int(vfac/desrc)
+
+     if(ie.gt.(nesrc-1)) goto 100
+
+!$omp atomic
+     myavw(i,ie) = myavw(i,ie)+w3e(m)
+!$omp atomic
+     myg(i,ie) = myg(i,ie)+1
+     
+100  continue
+  end do
+
+  if(idg==1)write(*,*)'before reduce'
+  call MPI_ALLREDUCE(myavw,  &
+       avw,             &
+       bfcnt,MPI_REAL8,       &
+       MPI_SUM,MPI_COMM_WORLD,ierr)
+  call MPI_ALLREDUCE(myg,  &
+       g,             &
+       bfcnt,MPI_REAL8,       &
+       MPI_SUM,MPI_COMM_WORLD,ierr)
+
+  avwexeps = avw/(g+1e-4)
+  ntot = 0
+  do i = 0,nxsrc-1
+     do j = 0,nesrc-1
+        ntot = ntot+g(i,j)
+     end do
+  end do
+  
+  do i = 0,im-1
+     myjac(i) = jac(i,0)
+  end do
+  call MPI_ALLREDUCE(myjac,totjac,im,  &
+       MPI_REAL8,MPI_SUM,tube_comm,ierr)
+  do i = 0,nxsrc-1
+     r=(i+0.5)*dxsrc-0.5*lx+lr0
+     m = int((r-rin)/dr)
+     wx0 = (rin+(m+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     ter = wx0*t0e(m)+wx1*t0e(m+1)        
+     k = int((i+0.5)/float(nxsrc)*imx)    !NGP. could be more accurate with LI
+     do j = 0,nesrc-1
+        dum = (j+0.5)*desrc*ter
+        v = sqrt(2*dum/emass)
+        dv = desrc*ter/(emass*v)
+        phasvol(i,j) = 4*pi*v**2 *dv *dxsrc*ly *dz*totjac(k)
+
+        if(eldu==0)gdum = 1.0/(2*pi*ter)**1.5*exp(-dum/ter) * emass**1.5
+        if(eldu==1)gdum = 1./(2*pi*tge)**1.5*exp(-dum/tge) * emass**1.5
+
+        if(g(i,j)>0)gmrkre(i,j) = totvol*g(i,j)/(ntot*phasvol(i,j))
+        if(g(i,j)==0)gmrkre(i,j) = gdum
+     end do
+  end do
+
+!g diagnostics, gtilde=g/volume(x,eps,dx,deps)
+  if(igtilde==1)then
+     if(myid.eq.master)then
+        open(10, file='gtilde', status='unknown',position='rewind')
+        do i = 0,nxsrc-1
+           r=(i+0.5)*dxsrc-0.5*lx+lr0
+           m = int((r-rin)/dr)
+           wx0 = (rin+(m+1)*dr-r)/dr
+           wx1 = 1.-wx0
+           ter = wx0*t0e(m)+wx1*t0e(m+1)        
+           do j = 0,nesrc-1
+              dum = (j+0.5)*desrc*ter
+              if(eldu==0)gdum = 1.0/(2*pi*ter)**1.5*exp(-dum/ter) * emass**1.5
+              if(eldu==1)gdum = 1./(2*pi*tge)**1.5*exp(-dum/tge) * emass**1.5
+              write(10,10)i,j,g(i,j),phasvol(i,j),gmrkre(i,j),gdum
+           end do
+        enddo
+        write(10,11)ntot
+        close(10)
+     end if
+10   format(1x,i6,1x,i6,5(2x,e10.3))
+11   format(1x,i15)
+  end if
+
+  !integral over velocity
+  do m = 0, nxsrc-1
+     r = rin+(m+0.5)*dxsrc
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     ter = wx0*t0e(i)+wx1*t0e(i+1)
+     xn = wx0*xn0e(i)+wx1*xn0e(i+1)
+     dn = 0.
+     totn = 0.
+     do j = 0, nesrc-1
+        vfac1 = (j)*desrc*ter
+        vfac = (j+0.5)*desrc*ter
+        vfac2 = (j+1)*desrc*ter
+        v = sqrt(2.0/emass*vfac)
+        dv = sqrt(2.0/emass*vfac2)-sqrt(2.0/emass*vfac1)
+        gdum = 1.0/ter**1.5*exp(-vfac/ter)
+        if(eldu==1)gdum = 1./tge**1.5*exp(-vfac/tge)
+        fdum = xn/ter**1.5*exp(-vfac/ter)
+        dn = dn+avwexeps(m,j)*gdum*dv
+        totn = totn+fdum*dv
+     end do
+     fesrc(m) = totn
+     dnesrc(m) = dn
+  end do
+
+!  goto 200
+  
+  !keep only low kr componentts
+  do j = 0, nesrc-1
+     do k = 1, nzsrc
+        dum = 0.
+        do i = 0, nxsrc-1
+           dum = dum+avwexeps(i,j)*sin(pi*float(k*i)/imx)
+        end do
+        am(j,k) = dum*2/imx
+     end do
+  end do
+  do j = 0, nesrc-1
+     do i = 0, nxsrc-1
+        dum = 0.
+        do k = 1, nzsrc
+           dum = dum+am(j,k)*sin(pi*k*i/imx)
+        end do
+        avwexez(i,j) = dum
+     end do
+  end do
+
+  !remove low kr in dnesrc
+  do k = 1, nzsrc
+     dum = 0.
+     do i = 0, nxsrc-1
+        dum = dum+dnesrc(i)*sin(pi*float(k*i)/imx)
+     end do
+     am(0,k) = dum*2./imx
+  end do
+  do i = 0, nxsrc-1
+     dum = 0.
+     do k = 1, nzsrc
+        dum = dum+am(0,k)*sin(pi*k*i/imx)
+     end do
+     dnesrcz(i) = dum
+  end do
+
+200 continue  
+end subroutine weatxeps
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!average of we at (r, eps)
+subroutine wiatxeps(ns,igtilde)
+  use gem_com
+  use gem_equil
+  implicit none
+  INTEGER :: m,i,j,k,ie,bfcnt,ns,igtilde,ntot
+  real :: r,th,wx0,wx1,wz0,wz1,b,ter,xnp,xt,vfac,vfac1,vfac2,xn,dn,totn,gdum,fdum,v,dv,dum
+  real :: myavw(0:nxsrc-1,0:nesrc-1),myg(0:nxsrc-1,0:nesrc-1)
+  real :: avw(0:nxsrc-1,0:nesrc-1),g(0:nxsrc-1,0:nesrc-1),phasvol(0:nxsrc-1,0:nesrc-1)
+  real :: am(0:nesrc-1,1:nzcrt)
+  real :: myjac(0:imx),totjac(0:imx)
+  
+  bfcnt = nxsrc*nesrc
+
+  myavw = 0.
+  myg = 0.
+!$omp parallel do &
+!$omp private(i,k,ie,r,th,wx0,wx1,wz0,wz1,b,ter,xnp,vfac,xt) 
+  do m=1,mm(ns)
+     r=x3(ns,m)-0.5*lx+lr0
+
+     k = int(z3(ns,m)/delz)
+     wz0 = ((k+1)*delz-z3(ns,m))/delz
+     wz1 = 1-wz0
+     th = wz0*thfnz(k)+wz1*thfnz(k+1)
+
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     k = int((th+pi)/dth)
+     wz0 = (-pi+(k+1)*dth-th)/dth
+     wz1 = 1.-wz0
+
+     b = wx0*wz0*bfld(i,k)+wx0*wz1*bfld(i,k+1) &
+          +wx1*wz0*bfld(i+1,k)+wx1*wz1*bfld(i+1,k+1) 
+     ter = wx0*t0s(ns,i)+wx1*t0s(ns,i+1)        
+
+     vfac = 0.5*(mims(ns)*u3(ns,m)**2 + 2.*mu(ns,m)*b)/ter
+
+     xt = x3(ns,m)
+     i=int(xt/dxsrc)
+     i = min(i,nxsrc-1)
+     ie = int(vfac/desrc)
+
+     if(ie.gt.(nesrc-1)) goto 100
+
+!$omp atomic
+     myavw(i,ie) = myavw(i,ie)+w3(ns,m)
+!$omp atomic
+     myg(i,ie) = myg(i,ie)+1
+     
+100  continue
+  end do
+
+  if(idg==1)write(*,*)'before reduce'
+  call MPI_ALLREDUCE(myavw,  &
+       avw,             &
+       bfcnt,MPI_REAL8,       &
+       MPI_SUM,MPI_COMM_WORLD,ierr)
+  call MPI_ALLREDUCE(myg,  &
+       g,             &
+       bfcnt,MPI_REAL8,       &
+       MPI_SUM,MPI_COMM_WORLD,ierr)
+
+  avwixeps(ns,:,:) = avw(:,:)/(g(:,:)+1e-4)
+  ntot = 0
+  do i = 0,nxsrc-1
+     do j = 0,nesrc-1
+        ntot = ntot+g(i,j)
+     end do
+  end do
+  
+  do i = 0,im-1
+     myjac(i) = jac(i,0)
+  end do
+  call MPI_ALLREDUCE(myjac,totjac,im,  &
+       MPI_REAL8,MPI_SUM,tube_comm,ierr)
+  do i = 0,nxsrc-1
+     r=(i+0.5)*dxsrc-0.5*lx+lr0
+     m = int((r-rin)/dr)
+     wx0 = (rin+(m+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     ter = wx0*t0s(ns,m)+wx1*t0s(ns,m+1)        
+     k = int((i+0.5)/float(nxsrc)*imx)    !NGP. could be more accurate with LI
+     do j = 0,nesrc-1
+        dum = (j+0.5)*desrc*ter
+        v = sqrt(2*dum/mims(ns))
+        dv = desrc*ter/(mims(ns)*v)
+        phasvol(i,j) = 4*pi*v**2 *dv *dxsrc*ly *dz*totjac(k)
+
+        if(ildu==0)gdum = 1.0/(2*pi*ter)**1.5*exp(-dum/ter) * mims(ns)**1.5
+        if(ildu==1)gdum = 1./(2*pi*tgis(ns))**1.5*exp(-dum/tgis(ns)) * mims(ns)**1.5
+
+        if(g(i,j)>0)gmrkr(ns,i,j) = totvol*g(i,j)/(ntot*phasvol(i,j))
+        if(g(i,j)==0)gmrkr(ns,i,j) = gdum
+     end do
+  end do
+
+!g diagnostics, gtilde=g/volume(x,eps,dx,deps)
+  if(igtilde==1)then
+     if(myid.eq.master)then
+        open(9, file='gtildi', status='unknown',position='rewind')
+        do i = 0,nxsrc-1
+           r=(i+0.5)*dxsrc-0.5*lx+lr0
+           m = int((r-rin)/dr)
+           wx0 = (rin+(m+1)*dr-r)/dr
+           wx1 = 1.-wx0
+           ter = wx0*t0s(ns,m)+wx1*t0s(ns,m+1)        
+           do j = 0,nesrc-1
+              dum = (j+0.5)*desrc*ter
+              if(ildu==0)gdum = 1.0/(2*pi*ter)**1.5*exp(-dum/ter) * mims(ns)**1.5
+              if(ildu==1)gdum = 1./(2*pi*tgis(ns))**1.5*exp(-dum/tgis(ns)) * mims(ns)**1.5
+              write(9,10)i,j,g(i,j),phasvol(i,j),gmrkr(1,i,j),gdum
+           end do
+        enddo
+        write(9,11)ntot
+        close(9)
+     end if
+10   format(1x,i6,1x,i6,5(2x,e10.3))
+11   format(1x,i15)
+  end if
+  
+  !integral over velocity
+  do m = 0, nxsrc-1
+     r = rin+(m+0.5)*dxsrc
+     i = int((r-rin)/dr)
+     wx0 = (rin+(i+1)*dr-r)/dr
+     wx1 = 1.-wx0
+     ter = wx0*t0s(ns,i)+wx1*t0s(ns,i+1)
+     xn = wx0*xn0s(ns,i)+wx1*xn0s(ns,i+1)
+     dn = 0.
+     totn = 0.
+     do j = 0, nesrc-1
+        vfac1 = (j)*desrc*ter
+        vfac = (j+0.5)*desrc*ter
+        vfac2 = (j+1)*desrc*ter
+        v = sqrt(2.0/mims(ns)*vfac)
+        dv = sqrt(2.0/mims(ns)*vfac2)-sqrt(2.0/mims(ns)*vfac1)
+        gdum = 1.0/ter**1.5*exp(-vfac/ter)
+        if(ildu==1)gdum = 1./tgis(ns)**1.5*exp(-vfac/tgis(ns))
+        fdum = xn/ter**1.5*exp(-vfac/ter)
+        dn = dn+avwixeps(ns,m,j)*gdum * 4*pi*v**2*dv
+        totn = totn+fdum * 4*pi*v**2*dv
+     end do
+     fisrc(ns,m) = totn
+     dnisrc(ns,m) = dn
+  end do
+
+!  goto 200
+  
+  !keep only low kr componentts
+  do j = 0, nesrc-1
+     do k = 1, nzsrc
+        dum = 0.
+        do i = 0, nxsrc-1
+           dum = dum+avwixeps(ns,i,j)*sin(pi*float(k*i)/imx)
+        end do
+        am(j,k) = dum*2./imx
+     end do
+  end do
+  do j = 0, nesrc-1
+     do i = 0, nxsrc-1
+        dum = 0.
+        do k = 1, nzsrc
+           dum = dum+am(j,k)*sin(pi*k*i/imx)
+        end do
+        avwixez(ns,i,j) = dum
+     end do
+  end do
+
+  !remove low kr in dnisrc
+  do k = 1, nzsrc
+     dum = 0.
+     do i = 0, nxsrc-1
+        dum = dum+dnisrc(ns,i)*sin(pi*float(k*i)/imx)
+     end do
+     am(0,k) = dum*2./imx
+  end do
+  do i = 0, nxsrc-1
+     dum = 0.
+     do k = 1, nzsrc
+        dum = dum+am(0,k)*sin(pi*k*i/imx)
+     end do
+     dnisrcz(ns,i) = dum
+  end do
+
+200 continue  
+end subroutine wiatxeps
