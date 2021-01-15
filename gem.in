@@ -8,7 +8,7 @@ mecell=32     !total no of marker particles of electrons
 nsmx=1        !maximum number if impurity ions
 nsm=1         !number of ion species
 
-ntube=4       !calculated from numprocs and km
+ntube=1       !calculated from numprocs and km
 lxa=0.6       !radial box size divided by a
 r0a=0.5       !r0/a; center of the radial domain
 lymult=5      !the lowest nonzero toroidal mode number, Ly=2*pi*r0/q0/lymult
@@ -57,8 +57,8 @@ yshape=1.0    !gaussian filter used in nonlinear simulation along y
 zshape=137.44 !gaussian filter used in nonlinear simulation along z
 c4=2.0        !Gaussian filter is epx(-b2^c4)
 iput=1        !save files for restart, iput=1 always
-iget=1        !iget=1 to read from dump files during a restart run
-igetmx=1      !igetmx=1 to read from savede matrix files
+iget=0        !iget=1 to read from dump files during a restart run
+igetmx=0      !igetmx=1 to read from savede matrix files
 ision=1       !always 1, calculates ion contributions to current and density
 isiap=0       !switch for the ion skin current in Ampere's law
 

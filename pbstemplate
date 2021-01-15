@@ -1,16 +1,19 @@
 #PBS -S /bin/bash
 #PBS -N gem
-#PBS -l nodes=13:ppn=20
+#PBS -l nodes=4:ppn=20
 #PBS -q IB2
 #PBS -m b
 #PBS -m e
 #PBS -m a
 #PBS -o outfile
 #PBS -e errorfile
-#PBS -l walltime=200:0:00
+#PBS -l walltime=100:0:00
 
 ##do your jobp
 cd $PBS_O_WORKDIR
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+export OMP_NUM_THREADS=8
 date
-mpirun -n 256 ./gem_main >& run.out
+mpirun -n 64 ./gem_main >& run.out
 date
