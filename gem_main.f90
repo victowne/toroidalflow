@@ -9127,7 +9127,7 @@ end do
 
 !$omp parallel do &
 !$omp private(i,j,k,ie,il,j1,j2,j3,j4,j5,r,th,wx0,wx1,wy0,wy1,wz0,wz1,w,wx,wy,wz,we,wp,bfldp,jfnp,jacp,ter,b,vfac,vel,lamb,xt,yt) &
-!$omp private(js,vte,jv,dum) &
+!$omp private(js,vte,jv,dum) 
   do m=1,mme
      r=x3e(m)-0.5*lx+lr0
 
@@ -9249,7 +9249,7 @@ end do
 
 !$omp parallel do &
 !$omp private(i,j,k,ie,il,j1,j2,j3,j4,j5,r,th,wx0,wx1,wy0,wy1,wz0,wz1,w,wx,wy,wz,we,wp,bfldp,jfnp,jacp,ter,b,vfac,vel,lamb,xt,yt) &
-!$omp private(js,vte,jv,dum) &
+!$omp private(js,vte,jv,dum) 
   do m=1,mme
      r=xtmp(m)-0.5*lx+lr0
 
@@ -9360,7 +9360,7 @@ end do
 
 !$omp parallel do &
 !$omp private(i,j,k,ie,il,j1,j2,j3,j4,j5,r,th,wx0,wx1,wy0,wy1,wz0,wz1,w,wx,wy,wz,we,wp,bfldp,jfnp,jacp,ter,b,vfac,vel,lamb,xt,yt) &
-!$omp private(vte,dum,gdum,wght) &
+!$omp private(vte,dum,gdum,wght) 
   do m=1,mme
      wght = 0.
      r=x3e(m)-0.5*lx+lr0

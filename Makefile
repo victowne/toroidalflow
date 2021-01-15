@@ -8,7 +8,7 @@ PLIB = gem_pputil.o
 #F90 = ftn
 F90 = mpif90
 #OPT = -FR -r8 -heap-arrays -O2 -g -traceback -check bounds
-OPT = -FR -r8 -O3
+OPT = -FR -r8 -O3 -qopenmp
 LDFLAGS = 
 #INCLUDES = -I/share/apps/soft/intel2019/compilers_and_libraries_2019.5.281/linux/mpi/intel64/include
 
