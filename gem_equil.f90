@@ -42,6 +42,11 @@ MODULE gem_equil
   character(len=32) :: trflnm ! profile-data-file name
 !  real,external :: erf
 
+!twk: new variables for implement of toroidal flow    U=-omega*R
+  real,dimension(:),allocatable :: omega,domega
+  real,dimension(:,:),allocatable :: ut,bdgut,bdgbfld,phi1,bdgphi1
+  real,dimension(:,:),allocatable :: hrdgy,hzdgy,hrdgz,hzdgz,hztdgy    !They are hat{R} dot grad y ...
+
 contains
   subroutine new_equil()
       implicit none
@@ -58,7 +63,7 @@ contains
       real(8) :: btor(0:nr,0:ntheta),rhogem(0:nr),rgemplot(0:ntheta-1),zgemplot(0:ntheta-1)
       real(8) :: elonp(0:nr),triap(0:nr)
 
-      !arays for computing (b.grad rho) effect in vorticity
+      !arrays for computing (b.grad rho) effect in vorticity
       real(8) :: e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta)
       real(8) :: bdge1r(0:nr,0:ntheta),bdge1z(0:nr,0:ntheta),bdge2r(0:nr,0:ntheta),bdge2z(0:nr,0:ntheta),bdge2zet(0:nr,0:ntheta)      
 
@@ -90,6 +95,11 @@ contains
 
       allocate(e1gx(0:nr,0:ntheta),e1gy(0:nr,0:ntheta),e2gx(0:nr,0:ntheta),e2gy(0:nr,0:ntheta), &
            bdge1gx(0:nr,0:ntheta),bdge1gy(0:nr,0:ntheta),bdge2gx(0:nr,0:ntheta),bdge2gy(0:nr,0:ntheta))
+     
+      !twk: allocate
+      allocate(omega(0:nr),domega(0:nr),ut(0:nr,0:ntheta),bdgut(0:nr,0:ntheta),bdgbfld(0:nr,0:ntheta),&
+               hrdgy(0:nr,0:ntheta),hzdgy(0:nr,0:ntheta),hrdgz(0:nr,0:ntheta),hzdgz(0:nr,0:ntheta),&
+               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta))
 
       !Normalization
       e = 1.6e-19
@@ -229,6 +239,20 @@ contains
          end do
          psip(i) = f(i)/2/pi/sf(i)*dum
       end do
+
+!twk:assign profile of toroidal flow
+      do i = 0,nr
+         r = rin+i*dr
+         omega(i) = 1. - psip(i)**2
+         do j = 0,ntheta-1
+            ut(i,j) = -omega(i)*radius(i,j)
+         enddo
+      enddo
+      do i = 1,nr-1
+         domega(i) = (omega(i+1) - omega(i-1))/(2*dr)
+      enddo
+      domega(0) = (omega(1) - omega(0))/dr
+      domega(nr) = (omega(nr) - omega(nr-1))/dr
 
 !compute psi(r)
       dum = 0.
@@ -435,6 +459,17 @@ contains
          pthsrbz(i,ntheta) = (srbz(i,ntheta)-srbz(i,ntheta-1))/dth
       end do
 
+!twk:compute hatR.grady, hatZ.grady, hatR.gradz, hatZ.gradz, hatZeta.grady
+      do i = 0,nr
+         do j = 0,ntheta
+            hrdgy(i,j) = dydr(i,j)*srbr(i,j) + r0/q0*qhat(i,j)*thbr(i,j)
+            hzdgy(i,j) = dydr(i,j)*srbz(i,j) + r0/q0*qhat(i,j)*thbz(i,j)
+            hrdgz(i,j) = q0*rmaj0*thbr(i,j)
+            hzdgz(i,j) = q0*rmaj0*thbz(i,j)
+            hztdgy(i,j)= -r0/q0/radius(i,j)
+         enddo
+      enddo
+
 ! compute curvbz
       do i = 0,nr
          do j = 0,ntheta
@@ -461,6 +496,10 @@ contains
       call bdgrad(e2r,bdge2r)
       call bdgrad(e2z,bdge2z)
       call bdgrad(e2zet,bdge2zet)      
+      !twk: three terms in parallel acceleration
+      call bdgrad(bfld,bdgbfld)
+      call bdgrad(ut,bdgut)
+      call bdgrad(phi1,bdgphi1)
 
       do i = 0,nr
          do j = 0,ntheta
