@@ -255,7 +255,7 @@ contains
       domega(0) = (omega(1) - omega(0))/dr
       domega(nr) = (omega(nr) - omega(nr-1))/dr
       do i = 0,nr
-         dum = SUM(radius2(i,:))*dth/2./pi
+         dum = SUM(radius2(i,1:ntheta))*dth/2./pi
          do j = 0,ntheta
             phi1(i,j) = mimp*omega(i)**2/4.*(radius(i,j)**2-dum)
          enddo
