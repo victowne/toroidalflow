@@ -44,7 +44,7 @@ MODULE gem_equil
 
 !twk: new variables for implement of toroidal flow    U=-omega*R
   real,dimension(:),allocatable :: omega,domega
-  real,dimension(:,:),allocatable :: ut,bdgut,bdgbfld,phi1,bdgphi1
+  real,dimension(:,:),allocatable :: ut,bdgut,bdgbfld,phi1,bdgphi1,radius2
   real,dimension(:,:),allocatable :: hrdgy,hzdgy,hrdgz,hzdgz,hztdgy    !They are hat{R} dot grad y ...
 
 contains
@@ -99,7 +99,7 @@ contains
       !twk: allocate
       allocate(omega(0:nr),domega(0:nr),ut(0:nr,0:ntheta),bdgut(0:nr,0:ntheta),bdgbfld(0:nr,0:ntheta),&
                hrdgy(0:nr,0:ntheta),hzdgy(0:nr,0:ntheta),hrdgz(0:nr,0:ntheta),hzdgz(0:nr,0:ntheta),&
-               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta))
+               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta),radius2(0:nr,0:ntheta))
 
       !Normalization
       e = 1.6e-19
@@ -166,6 +166,7 @@ contains
             th = -pi+dth*j
             radius(i,j) = rmaj(i)+r*cos(th+asin(tria(i))*sin(th))
             hght(i,j) = r*elon(i)*sin(th)
+            radius2(i,j) = radius(i,j)**2 !twk: R^2
          end do
       end do
 
@@ -240,11 +241,11 @@ contains
          psip(i) = f(i)/2/pi/sf(i)*dum
       end do
 
-!twk:assign profile of toroidal flow
+!twk:assign profile of toroidal flow and phi1
       do i = 0,nr
          r = rin+i*dr
-         omega(i) = 1. - psip(i)**2
-         do j = 0,ntheta-1
+         omega(i) = 1. - r**2
+         do j = 0,ntheta
             ut(i,j) = -omega(i)*radius(i,j)
          enddo
       enddo
@@ -253,6 +254,12 @@ contains
       enddo
       domega(0) = (omega(1) - omega(0))/dr
       domega(nr) = (omega(nr) - omega(nr-1))/dr
+      do i = 0,nr
+         dum = SUM(radius2(i,:))*dth/2./pi
+         do j = 0,ntheta
+            phi1(i,j) = mimp*omega(i)**2/4.*(radius(i,j)**2-dum)
+         enddo
+      enddo
 
 !compute psi(r)
       dum = 0.
