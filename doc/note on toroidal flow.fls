@@ -1,9 +1,9 @@
-PWD c:/Users/vic_l/Desktop/Me
+PWD c:/Users/vic_l/Desktop/note/toroidal flow
 INPUT c:/texlive/2017/texmf.cnf
 INPUT c:/texlive/2017/texmf-dist/web2c/texmf.cnf
 INPUT c:/texlive/2017/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.tex
-OUTPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.log
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.tex
+OUTPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.log
 INPUT c:/texlive/2017/texmf-dist/tex/latex/base/article.cls
 INPUT c:/texlive/2017/texmf-dist/tex/latex/base/article.cls
 INPUT c:/texlive/2017/texmf-dist/tex/latex/base/size12.clo
@@ -72,9 +72,9 @@ INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics/color.sty
 INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics/color.sty
 INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/color.cfg
 INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/color.cfg
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.aux
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.aux
-OUTPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.aux
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.aux
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.aux
+OUTPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.aux
 INPUT c:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 INPUT c:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 INPUT c:/texlive/2017/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
@@ -87,14 +87,14 @@ INPUT c:/texlive/2017/texmf-dist/tex/latex/hyperref/nameref.sty
 INPUT c:/texlive/2017/texmf-dist/tex/latex/hyperref/nameref.sty
 INPUT c:/texlive/2017/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 INPUT c:/texlive/2017/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-OUTPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.pdf
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-OUTPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+OUTPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.pdf
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+OUTPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
 INPUT c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.bdg
 INPUT c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.enc
 INPUT c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.chr
@@ -114,10 +114,10 @@ INPUT c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu70.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu5e.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmr17.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.toc
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.toc
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.toc
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.toc
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
-OUTPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.toc
+OUTPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.toc
 INPUT c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
@@ -133,6 +133,8 @@ INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmbx8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmbx6.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
+INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
+INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmmib10.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib6.tfm
@@ -142,13 +144,11 @@ INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti7.tfm
-INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
-INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.bbl
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.bbl
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.aux
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
-INPUT c:/Users/vic_l/Desktop/Me/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.bbl
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.bbl
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.aux
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
+INPUT c:/Users/vic_l/Desktop/note/toroidal flow/note on toroidal flow.out
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
