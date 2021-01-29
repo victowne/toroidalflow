@@ -566,18 +566,23 @@ subroutine ppush(n,ns)
   real :: xt,xs,yt,xdot,ydot,zdot,pzdot,edot,pzd0,vp0
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
+  !twk: variables for guiding center drift-------
+  real :: utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp
+  !----------------------------------------------
   integer :: mynopi
   real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
 
   mynopi = 0
   nopi(ns) = 0
 
+!twk: line 7 in pragma
 !$omp parallel do default(shared) &
 !$omp private(i,j,k,l,r,th,wx0,wx1,wy0,wy1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp) &
 !$omp private(grdgtp,fp,jfnp,psipp,psp,ter,kaptp,kapnp,xnp,vncp,vparspp,psip2p,dipdrp,b,pzp,rhog,rhox,rhoy) &
 !$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,kap,dum1,vxdum,xdot,ydot,zdot) &
 !$omp private(pzd0,pzdot,edot,dum,laps,qr) &
 !$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
+!$omp private(utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp) &
 !$omp reduction(+: mynopi)
   do m=1,mm(ns)
      r=x2(ns,m)-0.5*lx+lr0
@@ -617,6 +622,20 @@ subroutine ppush(n,ns)
           +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1) 
      grdgtp = wx0*wz0*grdgt(i,k)+wx0*wz1*grdgt(i,k+1) &
           +wx1*wz0*grdgt(i+1,k)+wx1*wz1*grdgt(i+1,k+1) 
+     !twk: variables for guiding center drift----------------
+     utp = wx0*wz0*ut(i,k)+wx0*wz1*ut(i,k+1) &
+          +wx1*wz0*ut(i+1,k)+wx1*wz1*ut(i+1,k+1) 
+     srbrp = wx0*wz0*srbr(i,k)+wx0*wz1*srbr(i,k+1) &
+          +wx1*wz0*srbr(i+1,k)+wx1*wz1*srbr(i+1,k+1) 
+     srbzp = wx0*wz0*srbz(i,k)+wx0*wz1*srbz(i,k+1) &
+          +wx1*wz0*srbz(i+1,k)+wx1*wz1*srbz(i+1,k+1) 
+     hrdgyp = wx0*wz0*hrdgy(i,k)+wx0*wz1*hrdgy(i,k+1) &
+          +wx1*wz0*hrdgy(i+1,k)+wx1*wz1*hrdgy(i+1,k+1) 
+     hzdgyp = wx0*wz0*hzdgy(i,k)+wx0*wz1*hzdgy(i,k+1) &
+          +wx1*wz0*hzdgy(i+1,k)+wx1*wz1*hzdgy(i+1,k+1) 
+     hztdgyp = wx0*wz0*hztdgy(i,k)+wx0*wz1*hztdgy(i,k+1) &
+          +wx1*wz0*hztdgy(i+1,k)+wx1*wz1*hztdgy(i+1,k+1) 
+     !-------------------------------------------------------
 
      fp = wx0*f(i)+wx1*f(i+1)        
      jfnp = wz0*jfn(k)+wz1*jfn(k+1)
@@ -690,13 +709,25 @@ subroutine ppush(n,ns)
      kap = kapnp - (1.5-vfac/ter)*kaptp-vpar*mims(ns)/ter*vparspp*vparsw
      dum1 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
-     xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
+     xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp &
+          !twk:  eq. 6 dot x in my note-----------------------------------------------------
+          -mims(ns)*utp**2/q(ns)/bfldp**2/radius**2*fp*srbzp &
+          !twk:  eq. 12 dot x 
+          -mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
+          + fp**2)*srbzp
+          !---------------------------------------------------------------------------------
      ydot = (-exp1/b+vpar/b*delbyp)*dum1*nonlin(ns) &
           +iorb*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
           (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0   &
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -mims(ns)*vpar**2/(q(ns)*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
           -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp 
+          !twk:  eq. 6 dot y in my note-----------------------------------------------------
+          +mims(ns)*utp**2/q(ns)/bfldp**2/radius**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
+          !twk:  eq. 12 dot y 
+          +mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
+          -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp)
+          !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
           +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
           -1./b**2*q0*br0*fp/radiusp*grcgtp*vncp*vexbsw/jfnp &
