@@ -566,9 +566,10 @@ subroutine ppush(n,ns)
   real :: xt,xs,yt,xdot,ydot,zdot,pzdot,edot,pzd0,vp0
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
-  !twk: variables for guiding center drift-------
-  real :: utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp
-  !----------------------------------------------
+  !twk: declare some variables --------------------
+  real :: utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp !Vg
+  real :: bdgbfldp,bdgutp,bdgphi1p              !Vpar
+  !------------------------------------------------
   integer :: mynopi
   real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
 
@@ -622,7 +623,7 @@ subroutine ppush(n,ns)
           +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1) 
      grdgtp = wx0*wz0*grdgt(i,k)+wx0*wz1*grdgt(i,k+1) &
           +wx1*wz0*grdgt(i+1,k)+wx1*wz1*grdgt(i+1,k+1) 
-     !twk: variables for guiding center drift----------------
+     !twk: interp--------------------------------------------
      utp = wx0*wz0*ut(i,k)+wx0*wz1*ut(i,k+1) &
           +wx1*wz0*ut(i+1,k)+wx1*wz1*ut(i+1,k+1) 
      srbrp = wx0*wz0*srbr(i,k)+wx0*wz1*srbr(i,k+1) &
@@ -635,6 +636,12 @@ subroutine ppush(n,ns)
           +wx1*wz0*hzdgy(i+1,k)+wx1*wz1*hzdgy(i+1,k+1) 
      hztdgyp = wx0*wz0*hztdgy(i,k)+wx0*wz1*hztdgy(i,k+1) &
           +wx1*wz0*hztdgy(i+1,k)+wx1*wz1*hztdgy(i+1,k+1) 
+     bdgbfldp = wx0*wz0*bdgbfld(i,k)+wx0*wz1*bdgbfld(i,k+1) &
+          +wx1*wz0*bdgbfld(i+1,k)+wx1*wz1*bdgbfld(i+1,k+1) 
+     bdgutp = wx0*wz0*bdgut(i,k)+wx0*wz1*bdgut(i,k+1) &
+          +wx1*wz0*bdgut(i+1,k)+wx1*wz1*bdgut(i+1,k+1) 
+     bdgphi1p = wx0*wz0*bdgphi1(i,k)+wx0*wz1*bdgphi1(i,k+1) &
+          +wx1*wz0*bdgphi1(i+1,k)+wx1*wz1*bdgphi1(i+1,k+1) 
      !-------------------------------------------------------
 
      fp = wx0*f(i)+wx1*f(i+1)        
@@ -736,8 +743,10 @@ subroutine ppush(n,ns)
      pzd0 = tor*(-mu(ns,m)/mims(ns)/radiusp/bfldp*psipp*dbdtp*grcgtp)*b/bstar &
           +mu(ns,m)*vpar/(q(ns)*bstar*b)*dipdrp/radiusp*dbdtp*grcgtp
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
-          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0.
-
+          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0. &
+          !twk:  parallel acceleration due to toroidal flow---------------------------------
+          -mu(ns,m)/mims(ns)*bdgbfldp + 2.*utp*bdgutp - q(ns)/mims(ns)*bdgphi1p
+          !---------------------------------------------------------------------------------
      edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
           +q(ns)*vpar*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)    &
