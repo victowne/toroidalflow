@@ -711,9 +711,9 @@ subroutine ppush(n,ns)
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
      xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp &
           !twk:  eq. 6 dot x in my note-----------------------------------------------------
-          -mims(ns)*utp**2/q(ns)/bfldp**2/radius**2*fp*srbzp &
+          -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
           !twk:  eq. 12 dot x 
-          -mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
+          -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
           + fp**2)*srbzp
           !---------------------------------------------------------------------------------
      ydot = (-exp1/b+vpar/b*delbyp)*dum1*nonlin(ns) &
@@ -721,11 +721,11 @@ subroutine ppush(n,ns)
           (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0   &
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -mims(ns)*vpar**2/(q(ns)*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
-          -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp 
+          -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp & 
           !twk:  eq. 6 dot y in my note-----------------------------------------------------
-          +mims(ns)*utp**2/q(ns)/bfldp**2/radius**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
+          +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
           !twk:  eq. 12 dot y 
-          +mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
+          +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
           -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp)
           !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
