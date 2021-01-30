@@ -583,7 +583,7 @@ subroutine ppush(n,ns)
 !$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,kap,dum1,vxdum,xdot,ydot,zdot) &
 !$omp private(pzd0,pzdot,edot,dum,laps,qr) &
 !$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
-!$omp private(utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp) &
+!$omp private(utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,bdgbfldp,bdgutp,bdgphi1p) &
 !$omp reduction(+: mynopi)
   do m=1,mm(ns)
      r=x2(ns,m)-0.5*lx+lr0
