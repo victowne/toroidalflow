@@ -42,10 +42,11 @@ MODULE gem_equil
   character(len=32) :: trflnm ! profile-data-file name
 !  real,external :: erf
 
-!twk: new variables for implement of toroidal flow    U=-omega*R
-  real,dimension(:),allocatable :: omega,domega
+!twk: new variables for implement of toroidal flow    U=-omg*R
+  real,dimension(:),allocatable :: omg,domg
   real,dimension(:,:),allocatable :: ut,bdgut,bdgbfld,phi1,bdgphi1,radius2
   real,dimension(:,:),allocatable :: hrdgy,hzdgy,hrdgz,hzdgz,hztdgy    !They are hat{R} dot grad y ...
+  real,dimension(:,:),allocatable :: e1r,e1z,e2r,e2z,e2zet
 
 contains
   subroutine new_equil()
@@ -64,7 +65,8 @@ contains
       real(8) :: elonp(0:nr),triap(0:nr)
 
       !arrays for computing (b.grad rho) effect in vorticity
-      real(8) :: e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta)
+      !twk: make them(e1r...) global
+      !real(8) :: e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta)
       real(8) :: bdge1r(0:nr,0:ntheta),bdge1z(0:nr,0:ntheta),bdge2r(0:nr,0:ntheta),bdge2z(0:nr,0:ntheta),bdge2zet(0:nr,0:ntheta)      
 
       allocate(bfld(0:nr,0:ntheta),qhat(0:nr,0:ntheta),radius(0:nr,0:ntheta), &
@@ -97,9 +99,10 @@ contains
            bdge1gx(0:nr,0:ntheta),bdge1gy(0:nr,0:ntheta),bdge2gx(0:nr,0:ntheta),bdge2gy(0:nr,0:ntheta))
      
       !twk: allocate
-      allocate(omega(0:nr),domega(0:nr),ut(0:nr,0:ntheta),bdgut(0:nr,0:ntheta),bdgbfld(0:nr,0:ntheta),&
+      allocate(omg(0:nr),domg(0:nr),ut(0:nr,0:ntheta),bdgut(0:nr,0:ntheta),bdgbfld(0:nr,0:ntheta),&
                hrdgy(0:nr,0:ntheta),hzdgy(0:nr,0:ntheta),hrdgz(0:nr,0:ntheta),hzdgz(0:nr,0:ntheta),&
-               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta),radius2(0:nr,0:ntheta))
+               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta),radius2(0:nr,0:ntheta),&
+               e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta))
 
       !Normalization
       e = 1.6e-19
@@ -244,20 +247,20 @@ contains
 !twk:assign profile of toroidal flow and phi1
       do i = 0,nr
          r = rin+i*dr
-         omega(i) = 1. - r**2
+         omg(i) = 1. - r**2
          do j = 0,ntheta
-            ut(i,j) = -omega(i)*radius(i,j)
+            ut(i,j) = -omg(i)*radius(i,j)
          enddo
       enddo
       do i = 1,nr-1
-         domega(i) = (omega(i+1) - omega(i-1))/(2*dr)
+         domg(i) = (omg(i+1) - omg(i-1))/(2*dr)
       enddo
-      domega(0) = (omega(1) - omega(0))/dr
-      domega(nr) = (omega(nr) - omega(nr-1))/dr
+      domg(0) = (omg(1) - omg(0))/dr
+      domg(nr) = (omg(nr) - omg(nr-1))/dr
       do i = 0,nr
          dum = SUM(radius2(i,1:ntheta))*dth/2./pi
          do j = 0,ntheta
-            phi1(i,j) = mimp*omega(i)**2/4.*(radius(i,j)**2-dum)
+            phi1(i,j) = mimp*omg(i)**2/4.*(radius(i,j)**2-dum)
          enddo
       enddo
 
