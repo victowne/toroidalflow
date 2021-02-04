@@ -54,7 +54,7 @@ Eq. 6 $\cdot \nabla x$ is
 \end{equation}
 
 To implement this term, a new variable ${\tt ut}$ needed to be declared, representing the equilibrium toroidal flow. 
-Actually, we only need to declare a new variable ${\tt omega}$, then \texttt{ut=-omega*radius}, see {\bf Appendix}.
+Actually, we only need to declare a new variable ${\tt omg}$, then \texttt{ut=-omg*radius}, see {\bf Appendix}.
 
 For Eq. 6 $\cdot \nabla y$, 
 \begin{equation}
@@ -309,7 +309,7 @@ then we have
 \end{equation*}
 
 The gyro average of $\rho_R, \rho_Z {\rm \ and\ } \rho_\zeta$ could be obtained by the 4-point averaging method.
-The 4 points are at $\gamma=0,\pi/2,\pi {\rm \ and\ }3\pi/2$, respectively.
+The 4 points are at $\gamma=\pi/2,3\pi/2,0 {\rm \ and\ }\pi$, respectively.
 
 The second term,
 \begin{equation}
@@ -318,7 +318,7 @@ The second term,
     =&-\frac{q}{\Omega}\bigg\langle(\nabla\phi\times\mathbf{b})\cdot\nabla\psi_p\bigg\rangle\omega_0'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\frac{f_0}{T}\label{t2}
 \end{split}
 \end{equation}
-{\color{black}
+
 Considering
 \begin{equation}
 \begin{split}
@@ -338,10 +338,11 @@ So we have
         &=\psi_p'\nabla x\times\nabla\phi\cdot\frac{\nabla x\times\nabla y}{|\nabla x\times\nabla y|}\\
         &=\frac{\psi_p'}{|\nabla x\times\nabla y|}\bigg(\frac{\partial\phi}{\partial y}\nabla x\times\nabla y
         + \frac{\partial\phi}{\partial z}\nabla x\times\nabla z\bigg)\cdot\nabla x\times\nabla y\\
-        &=\psi_p'|\nabla x\times\nabla y|\frac{\partial\phi}{\partial y} + \frac{\psi_p'}{|\nabla x\times\nabla y|}
-        \frac{\partial\phi}{\partial z}(\nabla x\times\nabla z)\cdot(\nabla x\times\nabla y)\label{t1}
+        &=\psi_p'|\nabla x\times\nabla y|\frac{\partial\phi}{\partial y} {\color{blue}+ \frac{\psi_p'}{|\nabla x\times\nabla y|}
+        \frac{\partial\phi}{\partial z}(\nabla x\times\nabla z)\cdot(\nabla x\times\nabla y)}\label{t1}
     \end{split}
 \end{equation}
+{\color{blue}
 \begin{equation}
     \begin{split}
         (\nabla x\times\nabla z)\cdot(\nabla x\times\nabla y)&=(\nabla x\times\nabla y)\times\nabla x\cdot\nabla z\\
@@ -358,7 +359,8 @@ So we have
     \end{split}
 \end{equation}
 }
-According to Eq. \ref{t1} - \ref{t3}, Eq. \ref{t2} can be coded using existing variables.
+According to Eq. \ref{t1} - \ref{t3}, Eq. \ref{t2} can be coded using existing variables. The blue parts above are 
+small ordering terms that are NOT implemented for now. 
 
 \newpage
 \section*{Appendix}
@@ -380,8 +382,8 @@ We may need the following operator to simplify the coding process.
 \end{equation*}
 
 New variables declared in GEM:\\
-omega(nr)---$\omega$, angular frequency of toroidal flow\\
-domega(nr)---d$\omega$/dr\\
+omg(nr)---$\omega$, angular frequency of toroidal flow\\
+domg(nr)---d$\omega$/dr\\
 ut(nr,ntheta)---U, toroidal flow\\
 phi1(nr,ntheta)---$\Phi_1$\\
 bdgut,bdgbfld,bdgphi1::(nr,ntheta)---${\bf b}\cdot\nabla{\rm U},\ {\bf b}\cdot\nabla{\rm B},\ {\bf b}\cdot\nabla{\rm \Phi_1}$\\
@@ -390,7 +392,12 @@ hzdgy(nr,ntheta)---$\hat{Z}\cdot\nabla y$\\
 hrdgz(nr,ntheta)---$\hat{R}\cdot\nabla z$\\
 hzdgz(nr,ntheta)---$\hat{Z}\cdot\nabla z$\\
 hztdgy(nr,ntheta)---$\hat{\zeta}\cdot\nabla y$\\
-radius2(nr,ntheta)---$R^2$
+radius2(nr,ntheta)---$R^2$\\
+rhoreyp---$\big\langle\rho_R\frac{\partial\phi}{\partial y}\big\rangle$\\
+rhozeyp---$\big\langle\rho_Z\frac{\partial\phi}{\partial y}\big\rangle$\\
+rhoztexp---$\big\langle\rho_\zeta\frac{\partial\phi}{\partial x}\big\rangle$\\
+rhozteyp---$\big\langle\rho_\zeta\frac{\partial\phi}{\partial y}\big\rangle$\\
+rhoztezp---$\big\langle\rho_\zeta\frac{\partial\phi}{\partial z}\big\rangle$\\
 
 \newpage
 \bibliographystyle{unsrt}
