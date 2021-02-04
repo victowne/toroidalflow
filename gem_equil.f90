@@ -42,11 +42,12 @@ MODULE gem_equil
   character(len=32) :: trflnm ! profile-data-file name
 !  real,external :: erf
 
-!twk: new variables for implement of toroidal flow    U=-omg*R
+!twk: new variables for implement of toroidal flow    U=-omg*R    -------------------------------------
   real,dimension(:),allocatable :: omg,domg
   real,dimension(:,:),allocatable :: ut,bdgut,bdgbfld,phi1,bdgphi1,radius2
   real,dimension(:,:),allocatable :: hrdgy,hzdgy,hrdgz,hzdgz,hztdgy    !They are hat{R} dot grad y ...
   real,dimension(:,:),allocatable :: e1r,e1z,e2r,e2z,e2zet
+!------------------------------------------------------------------------------------------------------
 
 contains
   subroutine new_equil()
@@ -65,8 +66,9 @@ contains
       real(8) :: elonp(0:nr),triap(0:nr)
 
       !arrays for computing (b.grad rho) effect in vorticity
-      !twk: make them(e1r...) global
+      !twk: make them(e1r...) global -----------------------------------------------------------------------------
       !real(8) :: e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta)
+      !-----------------------------------------------------------------------------------------------------------
       real(8) :: bdge1r(0:nr,0:ntheta),bdge1z(0:nr,0:ntheta),bdge2r(0:nr,0:ntheta),bdge2z(0:nr,0:ntheta),bdge2zet(0:nr,0:ntheta)      
 
       allocate(bfld(0:nr,0:ntheta),qhat(0:nr,0:ntheta),radius(0:nr,0:ntheta), &
@@ -98,11 +100,12 @@ contains
       allocate(e1gx(0:nr,0:ntheta),e1gy(0:nr,0:ntheta),e2gx(0:nr,0:ntheta),e2gy(0:nr,0:ntheta), &
            bdge1gx(0:nr,0:ntheta),bdge1gy(0:nr,0:ntheta),bdge2gx(0:nr,0:ntheta),bdge2gy(0:nr,0:ntheta))
      
-      !twk: allocate
+      !twk: allocate --------------------------------------------------------------------------------------------
       allocate(omg(0:nr),domg(0:nr),ut(0:nr,0:ntheta),bdgut(0:nr,0:ntheta),bdgbfld(0:nr,0:ntheta),&
                hrdgy(0:nr,0:ntheta),hzdgy(0:nr,0:ntheta),hrdgz(0:nr,0:ntheta),hzdgz(0:nr,0:ntheta),&
                hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta),radius2(0:nr,0:ntheta),&
                e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta))
+      !----------------------------------------------------------------------------------------------------------
 
       !Normalization
       e = 1.6e-19
@@ -169,7 +172,9 @@ contains
             th = -pi+dth*j
             radius(i,j) = rmaj(i)+r*cos(th+asin(tria(i))*sin(th))
             hght(i,j) = r*elon(i)*sin(th)
-            radius2(i,j) = radius(i,j)**2 !twk: R^2
+            !twk:  R^2 -----------------------------
+            radius2(i,j) = radius(i,j)**2
+            !---------------------------------------
          end do
       end do
 
@@ -244,7 +249,7 @@ contains
          psip(i) = f(i)/2/pi/sf(i)*dum
       end do
 
-!twk:assign profile of toroidal flow and phi1
+!twk:assign profile of toroidal flow and phi1---------------------------
       do i = 0,nr
          r = rin+i*dr
          omg(i) = 1. - r**2
@@ -263,6 +268,7 @@ contains
             phi1(i,j) = mimp*omg(i)**2/4.*(radius(i,j)**2-dum)
          enddo
       enddo
+!-----------------------------------------------------------------------
 
 !compute psi(r)
       dum = 0.
@@ -469,7 +475,7 @@ contains
          pthsrbz(i,ntheta) = (srbz(i,ntheta)-srbz(i,ntheta-1))/dth
       end do
 
-!twk:compute hatR.grady, hatZ.grady, hatR.gradz, hatZ.gradz, hatZeta.grady
+!twk:compute hatR.grady, hatZ.grady, hatR.gradz, hatZ.gradz, hatZeta.grady--------
       do i = 0,nr
          do j = 0,ntheta
             hrdgy(i,j) = dydr(i,j)*srbr(i,j) + r0/q0*qhat(i,j)*thbr(i,j)
@@ -479,6 +485,7 @@ contains
             hztdgy(i,j)= -r0/q0/radius(i,j)
          enddo
       enddo
+!----------------------------------------------------------------------------------
 
 ! compute curvbz
       do i = 0,nr
@@ -506,10 +513,11 @@ contains
       call bdgrad(e2r,bdge2r)
       call bdgrad(e2z,bdge2z)
       call bdgrad(e2zet,bdge2zet)      
-      !twk: three terms in parallel acceleration
+      !twk: three terms in parallel acceleration----
       call bdgrad(bfld,bdgbfld)
       call bdgrad(ut,bdgut)
       call bdgrad(phi1,bdgphi1)
+      !---------------------------------------------
 
       do i = 0,nr
          do j = 0,ntheta

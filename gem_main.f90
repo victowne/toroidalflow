@@ -567,7 +567,7 @@ subroutine ppush(n,ns)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
   !twk: declare some variables --------------------------------------------------
-  real :: domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp 
+  real :: domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgxcgyp
   real :: bdgbfldp,bdgutp,bdgphi1p,sn(4),cn(4)              
   real :: e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp
   !------------------------------------------------------------------------------
@@ -589,7 +589,7 @@ subroutine ppush(n,ns)
 !$omp private(pzd0,pzdot,edot,dum,laps,qr) &
 !$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
 !$omp private(domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgbfldp,bdgutp,bdgphi1p) &
-!$omp private(e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp) &
+!$omp private(e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp,bdgxcgyp) &
 !$omp reduction(+: mynopi)
   do m=1,mm(ns)
      r=x2(ns,m)-0.5*lx+lr0
@@ -629,6 +629,21 @@ subroutine ppush(n,ns)
           +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1) 
      grdgtp = wx0*wz0*grdgt(i,k)+wx0*wz1*grdgt(i,k+1) &
           +wx1*wz0*grdgt(i+1,k)+wx1*wz1*grdgt(i+1,k+1) 
+
+     fp = wx0*f(i)+wx1*f(i+1)        
+     jfnp = wz0*jfn(k)+wz1*jfn(k+1)
+     psipp = wx0*psip(i)+wx1*psip(i+1)        
+     psp = wx0*psi(i)+wx1*psi(i+1)        
+     ter = wx0*t0s(ns,i)+wx1*t0s(ns,i+1)        
+     kaptp = wx0*capts(ns,i)+wx1*capts(ns,i+1)        
+     kapnp = wx0*capns(ns,i)+wx1*capns(ns,i+1)        
+     xnp = wx0*xn0s(ns,i)+wx1*xn0s(ns,i+1)        
+     vncp = wx0*phincp(i)+wx1*phincp(i+1)        
+     vparspp = wx0*vparsp(ns,i)+wx1*vparsp(ns,i+1)        
+     psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
+     dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
+     b=1.-tor+tor*bfldp
+     pzp = mims(ns)*u2(ns,m)/b*fp/br0-q(ns)*psp/br0
      !twk: interp--------------------------------------------
      utp = wx0*wz0*ut(i,k)+wx0*wz1*ut(i,k+1) &
           +wx1*wz0*ut(i+1,k)+wx1*wz1*ut(i+1,k+1) 
@@ -663,22 +678,8 @@ subroutine ppush(n,ns)
      e2ztp = wx0*wz0*e2zet(i,k)+wx0*wz1*e2zet(i,k+1) &
           +wx1*wz0*e2zet(i+1,k)+wx1*wz1*e2zet(i+1,k+1) 
      domgp = wx0*domg(i)+wx1*domg(i+1)        
+     bdgxcgyp = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp             
      !-------------------------------------------------------
-
-     fp = wx0*f(i)+wx1*f(i+1)        
-     jfnp = wz0*jfn(k)+wz1*jfn(k+1)
-     psipp = wx0*psip(i)+wx1*psip(i+1)        
-     psp = wx0*psi(i)+wx1*psi(i+1)        
-     ter = wx0*t0s(ns,i)+wx1*t0s(ns,i+1)        
-     kaptp = wx0*capts(ns,i)+wx1*capts(ns,i+1)        
-     kapnp = wx0*capns(ns,i)+wx1*capns(ns,i+1)        
-     xnp = wx0*xn0s(ns,i)+wx1*xn0s(ns,i+1)        
-     vncp = wx0*phincp(i)+wx1*phincp(i+1)        
-     vparspp = wx0*vparsp(ns,i)+wx1*vparsp(ns,i+1)        
-     psip2p = wx0*psip2(i)+wx1*psip2(i+1)        
-     dipdrp = wx0*dipdr(i)+wx1*dipdr(i+1)        
-     b=1.-tor+tor*bfldp
-     pzp = mims(ns)*u2(ns,m)/b*fp/br0-q(ns)*psp/br0
 
      rhog=sqrt(2.*b*mu(ns,m)*mims(ns))/(q(ns)*b)*iflr
 
@@ -754,7 +755,7 @@ subroutine ppush(n,ns)
      xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp &
           !twk:  eq. 6 dot x in my note-----------------------------------------------------
           -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
-          !twk:  eq. 12 dot x 
+          !      eq. 12 dot x 
           -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
           + fp**2)*srbzp
           !---------------------------------------------------------------------------------
@@ -766,7 +767,7 @@ subroutine ppush(n,ns)
           -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp & 
           !twk:  eq. 6 dot y in my note-----------------------------------------------------
           +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
-          !twk:  eq. 12 dot y 
+          !      eq. 12 dot y 
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
           -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp)
           !---------------------------------------------------------------------------------
@@ -788,8 +789,10 @@ subroutine ppush(n,ns)
           -q(ns)*vpar*delbxp*vp0 &
           !twk: -q<rho . nabla_U . nabla_phi>----------------------------------------------------------
           +q(ns)*( (domgp*radiusp*srbrp - utp/radiusp)*rhoreyp + domgp*radiusp*srbzp*rhozeyp)*hztdgyp &
-          +q(ns)*utp/radiusp*(rhoztexp*srbrp + rhozteyp*hrdgyp + rhoztezp*hrdgzp)
-          !twk: eq. 36
+          +q(ns)*utp/radiusp*(rhoztexp*srbrp + rhozteyp*hrdgyp + rhoztezp*hrdgzp) &
+          !    eq. 36 note the sign, small orderings are omitted, perhaps include them in future
+          +mims(ns)/bfldp*psipp*bdgxcgyp*eyp*domgp*radiusp*(fp/radiusp/bfldp*vpar + utp)
+          !--------------------------------------------------------------------------------------------
 
      x3(ns,m) = x2(ns,m) + 0.5*dt*xdot
      y3(ns,m) = y2(ns,m) + 0.5*dt*ydot
