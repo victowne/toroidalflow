@@ -566,13 +566,13 @@ subroutine ppush(n,ns)
   real :: xt,xs,yt,xdot,ydot,zdot,pzdot,edot,pzd0,vp0
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
+  integer :: mynopi
+  real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
   !twk: declare some variables --------------------------------------------------
   real :: domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgxcgyp
   real :: bdgbfldp,bdgutp,bdgphi1p,sn(4),cn(4)              
   real :: e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp
   !------------------------------------------------------------------------------
-  integer :: mynopi
-  real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
 
   mynopi = 0
   nopi(ns) = 0
@@ -957,6 +957,11 @@ subroutine cpush(n,ns)
   real :: dbdrp,dbdtp,grcgtp,bfldp,fp,radiusp,dydrp,qhatp,psipp,jfnp,grdgtp
   real :: grp,gxdgyp,rhox(4),rhoy(4),psp,pzp,vncp,vparspp,psip2p,bdcrvbp,curvbzp,dipdrp
   real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
+  !twk: declare some variables --------------------------------------------------
+  real :: domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgxcgyp
+  real :: bdgbfldp,bdgutp,bdgphi1p,sn(4),cn(4)              
+  real :: e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp
+  !------------------------------------------------------------------------------
 
   
   sbuf(1:10) = 0.
@@ -974,12 +979,19 @@ subroutine cpush(n,ns)
   nostemp=0.
   mynowi = 0
 
+!twk: gyro angle and line 7,8 in pragma
+  sn(1) = 1;   cn(1) = 0
+  sn(2) = -1;  cn(2) = 0
+  sn(3) = 0;   cn(3) = 1
+  sn(4) = 0;   cn(4) = -1
 !$omp parallel do default(shared) &
 !$omp private(i,j,k,l,r,th,wx0,wx1,wy0,wy1,wz0,wz1,dbdrp,dbdtp,grcgtp,bfldp,radiusp,dydrp,qhatp,grp,gxdgyp,curvbzp,bdcrvbp,grdgtp) &
 !$omp private(fp,jfnp,psipp,psp,ter,kaptp,kapnp,xnp,b,psip2p,dipdrp,pzp,vncp,vparspp,rhog,rhox,rhoy) &
 !$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,xdot,ydot,zdot) &
 !$omp private(pzd0,pzdot,edot,dum,dum1,vxdum,kap,w3old,laps,qr) &
 !$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
+!$omp private(domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgbfldp,bdgutp,bdgphi1p) &
+!$omp private(e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp,bdgxcgyp) &
 !$omp reduction(+: myavewi,myke,mypfl_es,mypfl_em,myefl_es,myefl_em,mynos,mynowi)
   do m=1,mm(ns)
      r=x3(ns,m)-0.5*lx+lr0
@@ -1035,6 +1047,42 @@ subroutine cpush(n,ns)
      pzp = mims(ns)*u3(ns,m)/b*fp/br0-q(ns)*psp/br0
      vncp = wx0*phincp(i)+wx1*phincp(i+1)        
      vparspp = wx0*vparsp(ns,i)+wx1*vparsp(ns,i+1)        
+     !twk: interp--------------------------------------------
+     utp = wx0*wz0*ut(i,k)+wx0*wz1*ut(i,k+1) &
+          +wx1*wz0*ut(i+1,k)+wx1*wz1*ut(i+1,k+1) 
+     srbrp = wx0*wz0*srbr(i,k)+wx0*wz1*srbr(i,k+1) &
+          +wx1*wz0*srbr(i+1,k)+wx1*wz1*srbr(i+1,k+1) 
+     srbzp = wx0*wz0*srbz(i,k)+wx0*wz1*srbz(i,k+1) &
+          +wx1*wz0*srbz(i+1,k)+wx1*wz1*srbz(i+1,k+1) 
+     hrdgyp = wx0*wz0*hrdgy(i,k)+wx0*wz1*hrdgy(i,k+1) &
+          +wx1*wz0*hrdgy(i+1,k)+wx1*wz1*hrdgy(i+1,k+1) 
+     hzdgyp = wx0*wz0*hzdgy(i,k)+wx0*wz1*hzdgy(i,k+1) &
+          +wx1*wz0*hzdgy(i+1,k)+wx1*wz1*hzdgy(i+1,k+1) 
+     hztdgyp = wx0*wz0*hztdgy(i,k)+wx0*wz1*hztdgy(i,k+1) &
+          +wx1*wz0*hztdgy(i+1,k)+wx1*wz1*hztdgy(i+1,k+1) 
+     hrdgzp = wx0*wz0*hrdgz(i,k)+wx0*wz1*hrdgz(i,k+1) &
+          +wx1*wz0*hrdgz(i+1,k)+wx1*wz1*hrdgz(i+1,k+1) 
+     hzdgzp = wx0*wz0*hzdgz(i,k)+wx0*wz1*hzdgz(i,k+1) &
+          +wx1*wz0*hzdgz(i+1,k)+wx1*wz1*hzdgz(i+1,k+1) 
+     bdgbfldp = wx0*wz0*bdgbfld(i,k)+wx0*wz1*bdgbfld(i,k+1) &
+          +wx1*wz0*bdgbfld(i+1,k)+wx1*wz1*bdgbfld(i+1,k+1) 
+     bdgutp = wx0*wz0*bdgut(i,k)+wx0*wz1*bdgut(i,k+1) &
+          +wx1*wz0*bdgut(i+1,k)+wx1*wz1*bdgut(i+1,k+1) 
+     bdgphi1p = wx0*wz0*bdgphi1(i,k)+wx0*wz1*bdgphi1(i,k+1) &
+          +wx1*wz0*bdgphi1(i+1,k)+wx1*wz1*bdgphi1(i+1,k+1) 
+     e1rp = wx0*wz0*e1r(i,k)+wx0*wz1*e1r(i,k+1) &
+          +wx1*wz0*e1r(i+1,k)+wx1*wz1*e1r(i+1,k+1) 
+     e2rp = wx0*wz0*e2r(i,k)+wx0*wz1*e2r(i,k+1) &
+          +wx1*wz0*e2r(i+1,k)+wx1*wz1*e2r(i+1,k+1) 
+     e1zp = wx0*wz0*e1z(i,k)+wx0*wz1*e1z(i,k+1) &
+          +wx1*wz0*e1z(i+1,k)+wx1*wz1*e1z(i+1,k+1) 
+     e2zp = wx0*wz0*e2z(i,k)+wx0*wz1*e2z(i,k+1) &
+          +wx1*wz0*e2z(i+1,k)+wx1*wz1*e2z(i+1,k+1) 
+     e2ztp = wx0*wz0*e2zet(i,k)+wx0*wz1*e2zet(i,k+1) &
+          +wx1*wz0*e2zet(i+1,k)+wx1*wz1*e2zet(i+1,k+1) 
+     domgp = wx0*domg(i)+wx1*domg(i+1)        
+     bdgxcgyp = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp             
+     !-------------------------------------------------------
 
      rhog=sqrt(2.*b*mu(ns,m)*mims(ns))/(q(ns)*b)*iflr
 
@@ -1058,6 +1106,13 @@ subroutine cpush(n,ns)
      dpdzp = 0.
      dadzp = 0.
      aparp = 0.
+     !twk:-----------------------------------------------------
+     rhoreyp = 0.
+     rhozeyp = 0.
+     rhoztexp = 0.
+     rhozteyp = 0.
+     rhoztezp = 0.
+     !---------------------------------------------------------
 
      !  4 pt. avg. written out explicitly for vectorization...
      do l=1,lr(1)
@@ -1080,6 +1135,13 @@ subroutine cpush(n,ns)
      dpdzp = dpdzp/4.
      dadzp = dadzp/4.
      aparp = aparp/4.
+     !twk:-----------------------------------------------------
+     rhoreyp = rhoreyp/4.
+     rhozeyp = rhozeyp/4.
+     rhoztexp = rhoztexp/4.
+     rhozteyp = rhozteyp/4.
+     rhoztezp = rhoztezp/4.
+     !---------------------------------------------------------
 
 
      vfac = 0.5*(mims(ns)*u3(ns,m)**2 + 2.*mu(ns,m)*b)
@@ -1093,13 +1155,25 @@ subroutine cpush(n,ns)
      kap = kapnp - (1.5-vfac/ter)*kaptp-vpar*mims(ns)/ter*vparspp*vparsw
      dum1 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
-     xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp
+     xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp &
+          !twk:  eq. 6 dot x in my note-----------------------------------------------------
+          -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
+          !      eq. 12 dot x 
+          -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
+          + fp**2)*srbzp
+          !---------------------------------------------------------------------------------
      ydot = (-exp1/b+vpar/b*delbyp)*dum1*nonlin(ns)     &
           +iorb*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
           (-dydrp*dbdtp+r0/q0*qhatp*dbdrp)+vp0 &
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -mims(ns)*vpar**2/(q(ns)*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
-          -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp  
+          -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp & 
+          !twk:  eq. 6 dot y in my note-----------------------------------------------------
+          +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
+          !      eq. 12 dot y 
+          +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
+          -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp)
+          !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1.-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
           +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
           -1./b**2*q0*br0*fp/radiusp*grcgtp*vncp*vexbsw/jfnp &
@@ -1108,12 +1182,21 @@ subroutine cpush(n,ns)
      pzd0 = tor*(-mu(ns,m)/mims(ns)/radiusp/bfldp*psipp*dbdtp*grcgtp)*b/bstar &
           +mu(ns,m)*vpar/(q(ns)*bstar*b)*dipdrp/radiusp*dbdtp*grcgtp
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
-          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0.
+          +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0. &
+          !twk:  parallel acceleration due to toroidal flow---------------------------------
+          -mu(ns,m)/mims(ns)*bdgbfldp + 2.*utp*bdgutp - q(ns)/mims(ns)*bdgphi1p
+          !---------------------------------------------------------------------------------
 
      edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
           +q(ns)*vpar*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)   &
-          -q(ns)*vpar*delbxp*vp0
+          -q(ns)*vpar*delbxp*vp0 &
+          !twk: -q<rho . nabla_U . nabla_phi>----------------------------------------------------------
+          +q(ns)*( (domgp*radiusp*srbrp - utp/radiusp)*rhoreyp + domgp*radiusp*srbzp*rhozeyp)*hztdgyp &
+          +q(ns)*utp/radiusp*(rhoztexp*srbrp + rhozteyp*hrdgyp + rhoztezp*hrdgzp) &
+          !    eq. 36 note the sign, small orderings are omitted, perhaps include them in future
+          +mims(ns)/bfldp*psipp*bdgxcgyp*eyp*domgp*radiusp*(fp/radiusp/bfldp*vpar + utp)
+          !--------------------------------------------------------------------------------------------
 
      x3(ns,m) = x2(ns,m) + dt*xdot
      y3(ns,m) = y2(ns,m) + dt*ydot
