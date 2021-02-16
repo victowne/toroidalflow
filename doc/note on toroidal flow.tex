@@ -54,7 +54,7 @@ Eq. 6 $\cdot \nabla x$ is
 \end{equation}
 
 To implement this term, a new variable ${\tt ut}$ needed to be declared, representing the equilibrium toroidal flow. 
-Actually, we only need to declare a new variable ${\tt omg}$, then \texttt{ut=-omg*radius}, see {\bf Appendix}.
+Actually, we only need to declare a new variable ${\tt omg}$, then \texttt{ut=-omg*radius}, see \hyperref[app]{\bf Appendix}.
 
 For Eq. 6 $\cdot \nabla y$, 
 \begin{equation}
@@ -71,6 +71,11 @@ where $\hat{q} = q \frac{\partial \theta_f}{\partial \theta}$.
                                       \frac{\partial \theta}{\partial Z} - \frac{r_0}{q_0R} \psi_p^{'}(r)\frac{\partial r}{\partial R}), 
 \end{split}
 \end{equation}
+{\color{blue}
+\begin{equation*}
+    \frac{cm_aU^2}{e_aB^2R^2}(-f\hat{Z}\cdot\nabla y + \psi_p^{'}(r)\frac{\partial r}{\partial R} \hat{\zeta}\cdot\nabla y)  
+\end{equation*}
+}
 
 So far, all the terms about Eq. \ref{eq1} is finished. Let's start with Eqs. \ref{eq2} and \ref{eq3}.
 Still in the $(R,Z,\zeta)$ coordinate, one could find Eq. \ref{eq2} is identical to Eq. \ref{eq3} as
@@ -108,6 +113,16 @@ Using Eq. \ref{eqdely},
     &+ \frac{r_0}{q_0R}f\psi_p^{'}(r)\frac{\partial r}{\partial R}].
 \end{split}
 \end{equation}
+{\color{blue}
+\begin{equation*}
+    \begin{split}
+        \frac{cm_av_{\parallel}{'}U}{e_aB^3R^3}\bigg[&-\psi_p^{'2}(r)\frac{\partial r}{\partial R}\frac{\partial r}{\partial Z}
+        \hat{R}\cdot\nabla y\\
+        &- \bigg(f^2 + \psi_p^{'2}(r)(\frac{\partial r}{\partial Z})^2\bigg)\hat{Z}\cdot\nabla y\\
+        &+ f\psi_p^{'}(r)\frac{\partial r}{\partial R}\hat{\zeta}\cdot\nabla y\qquad\qquad\quad\bigg]
+    \end{split}
+\end{equation*}
+}
 
 \newpage
 \section{Parallel acceleration due to toroidal flow}
@@ -275,13 +290,23 @@ then we have
 \begin{equation}
     \begin{split}
         &-\langle\boldsymbol{\rho}\cdot\nabla \mathbf{U}\cdot\nabla\phi\rangle=
-        \bigg(\frac{U}{R}\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle -\omega'R\frac{\partial r}{\partial R}\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle -\omega'R\frac{\partial r}{\partial Z}\bigg\langle\rho_Z\frac{\partial\phi}{\partial y}\bigg\rangle)\frac{r_0}{q_0R}\\
+        \bigg(\frac{U}{R}\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle -\omega'R\frac{\partial r}{\partial R}\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle -\omega'R\frac{\partial r}{\partial Z}\bigg\langle\rho_Z\frac{\partial\phi}{\partial y}\bigg\rangle\bigg)\frac{r_0}{q_0R}\\
         &+\frac{U}{R}\bigg(\bigg\langle\rho_\zeta\frac{\partial\phi}{\partial x}\bigg\rangle\frac{\partial r}{\partial R} 
         + \bigg\langle\rho_\zeta\frac{\partial\phi}{\partial y}\bigg\rangle\bigg(\frac{\partial y}{\partial r}\frac{\partial r}{\partial R}
         + \frac{r_0}{q_0}\hat{q}\frac{\partial \theta}{\partial R}\bigg)
         + \bigg\langle\rho_\zeta\frac{\partial \phi}{\partial z}\bigg\rangle q_0R_0\frac{\partial \theta}{\partial R}\bigg)
     \end{split}
 \end{equation}
+
+{\color{blue}
+\begin{equation*}
+    \begin{split}
+        &\bigg[\bigg(\omega'R\frac{\partial r}{\partial R} - \frac{U}{R}\bigg)\bigg\langle\rho_R\frac{\partial\phi}{\partial y}\bigg\rangle + \omega'R\frac{\partial r}{\partial Z}\bigg\langle\rho_Z\frac{\partial\phi}{\partial y}\bigg\rangle\bigg]\hat{\zeta}\cdot\nabla y\\
+        +&\frac{U}{R}\bigg(\bigg\langle\rho_\zeta\frac{\partial\phi}{\partial x}\bigg\rangle\frac{\partial r}{\partial R} 
+        + \bigg\langle\rho_\zeta\frac{\partial\phi}{\partial y}\bigg\rangle\hat{R}\cdot\nabla y
+        + \bigg\langle\rho_\zeta\frac{\partial \phi}{\partial z}\bigg\rangle \hat{R}\cdot\nabla z\bigg)
+    \end{split}
+\end{equation*}}
 
 \begin{equation*}
     \rho_R = \rho({\rm e_{1R}sin}\gamma + {\rm e_{2R}cos}\gamma)
@@ -363,7 +388,11 @@ According to Eq. \ref{t1} - \ref{t3}, Eq. \ref{t2} can be coded using existing v
 small ordering terms that are NOT implemented for now. 
 
 \newpage
-\section*{Appendix}
+\section{Verification of the model}
+Above are all the changes for adiabatic electron model. Let's start to test the code.
+
+\newpage
+\section*{Appendix}\label{app}
 We may need the following operator to simplify the coding process.
 \begin{equation*}
     \hat{R}\cdot\nabla y = \frac{\partial y}{\partial r}\frac{\partial r}{\partial R} + \frac{r_0}{q_0}\hat{q}\frac{\partial \theta}{\partial R}
