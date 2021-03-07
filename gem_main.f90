@@ -258,7 +258,7 @@ n_omp = nthreads
      write(19,*)'a/cs=', a/sqrt(t0e(nr/2)/mimp)
      write(19,*)'i,   sf,   ni,   ne,   nc,   ti,   tc,   capni,   capnc, captc'
      do i = 0,nr
-        write(19,99)i,sf(i),xn0e(i),xn0i(i),xn0c(i),t0e(i),t0i(i),t0c(i),capne(i),capni(i),capnc(i),capte(i),capti(i),captc(i)
+        write(19,99)i,sf(i),xn0e(i),xn0i(i),xn0c(i),t0e(i),t0i(i),t0c(i),capne(i),capni(i),capnc(i),capte(i),capti(i),captc(i),omg(i),domg(i)
      end do
      write(19,99)i,cn0e,cn0s(1),cn0s(2),cn0s(3)
      close(19)

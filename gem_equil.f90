@@ -252,7 +252,8 @@ contains
 !twk:assign profile of toroidal flow and phi1---------------------------
       do i = 0,nr
          r = rin+i*dr
-         omg(i) = 1. - r**2
+         s = r/a
+         omg(i) = 2e-3*(1. - s**2)
          do j = 0,ntheta
             ut(i,j) = -omg(i)*radius(i,j)
          enddo
