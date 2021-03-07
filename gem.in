@@ -1,36 +1,36 @@
 &primary_parameters
 itube=0       !0: global simulation; 1: flux tube 
 imx=256       !number of grid points along x direction
-jmx=128       !number of grid points along y direction
+jmx=32        !number of grid points along y direction
 kmx=64        !number of grid points along z direction, the primary domain decomposition. 
-micell=16     !total no of marker particles of ions
-mecell=32     !total no of marker particles of electrons
+micell=8      !total no of marker particles of ions
+mecell=16     !total no of marker particles of electrons
 nsmx=1        !maximum number if impurity ions
 nsm=1         !number of ion species
 
 ntube=1       !calculated from numprocs and km
-lxa=0.6       !radial box size divided by a
+lxa=0.4       !radial box size divided by a
 r0a=0.5       !r0/a; center of the radial domain
-lymult=5      !the lowest nonzero toroidal mode number, Ly=2*pi*r0/q0/lymult
-jcnt=19       !number of toroidal mode numbers.  +n and -n count as two different modes, plus the n=0 mode
+lymult=19      !the lowest nonzero toroidal mode number, Ly=2*pi*r0/q0/lymult
+jcnt=3       !number of toroidal mode numbers.  +n and -n count as two different modes, plus the n=0 mode
 dt=1.0         !times steps in units of omega_u=eB/mp
-nm=18200       !total no of times steps
+nm=10000       !total no of times steps
 
-amp=1e-3      !amplitude of initial weight defined in loading (loadi and ldel)
+amp=1e-4      !amplitude of initial weight defined in loading (loadi and ldel)
 isg=1.0       !split weigh factor, almost always 1.0
 ifluid=1      !0: no kinetic electron; 1: invokes kinetic electron
 
 amie=1800.    !proton to electron mass ratio
 rneui=0e-4    !ion electron(?) collision frequency
-betai=2.0e-3   !electron beta
+betai=1.0e-2   !electron beta
 
-nonlin1=1     !switch for ion nl terms. 0: linear; 1: nl
+nonlin1=0     !switch for ion nl terms. 0: linear; 1: nl
 nonlin2=0     !
-nonline=1     !switch for electron nonlinear terms. 0: linear; 1: nonlinear
+nonline=0     !switch for electron nonlinear terms. 0: linear; 1: nonlinear
 iflut=1       !1 always to keep the magnetic flutter component v_||delB/B in x and y component of velocity/drift 
 iexb=1
 ipara=0       !switch to take in to parallel non-linearity. 0: exclude; 1: include
-isonew=1      !=1 to include 1-w in weight equation
+isonew=0      !=1 to include 1-w in weight equation
 
 vcut=15.      !Particles with kinetic energy exceeding vcutt*T(r) are not counted during deposition 
 wecut=2.0     !electron weight cut-off parameter
@@ -64,7 +64,7 @@ isiap=0       !switch for the ion skin current in Ampere's law
 
 llk=0         !radial wavenumber index for some diagnostics
 mlk=1         !binormal wavenumber index for some diagnostics
-onemd=0       !onemd=1 keeps only one mode in y, e.g. in linear n-scan
+onemd=1       !onemd=1 keeps only one mode in y, e.g. in linear n-scan
 izonal=1      !0: remove the zonal component
 
 adiabatic_electron=0    !adiabatic electron options. 0: non; 1: adiabatic
