@@ -4,13 +4,22 @@
 H.~Sugama and W.~Horton.
 \newblock Nonlinear electromagnetic gyrokinetic equation for plasmas with large
   mean flows.
-\newblock {\em Physics of Plasmas}, 5(7):2560--2573, 1998.
+\newblock {\em \href{https://doi.org/10.1063/1.872941}{Physics of Plasmas}},
+  5(7):2560--2573, 1998.
 
 \bibitem{vc}
 Bastian~E. Rapp.
 \newblock Chapter 7 - vector calculus.
 \newblock In Bastian~E. Rapp, editor, {\em Microfluidics: Modelling, Mechanics
-  and Mathematics}, Micro and Nano Technologies, pages 137 -- 188. Elsevier,
-  Oxford, 2017.
+  and Mathematics},
+  {\href{https://doi.org/10.1016/B978-1-4557-3141-1.50007-1}{Micro and Nano
+  Technologies}}, pages 137 -- 188. Elsevier, Oxford, 2017.
+
+\bibitem{gorler}
+T.~G{\"o}rler, N.~Tronko, W.~A. Hornsby, A.~Bottino, R.~Kleiber, C.~Norscini,
+  V.~Grandgirard, F.~Jenko, and E.~Sonnendrücker.
+\newblock Intercode comparison of gyrokinetic global electromagnetic modes.
+\newblock {\em \href{https://doi.org/10.1063/1.4954915}{Physics of Plasmas}},
+  23(7):072503, 2016.
 
 \end{thebibliography}
