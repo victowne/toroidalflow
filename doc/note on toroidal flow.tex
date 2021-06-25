@@ -143,6 +143,8 @@ We will neglect the $\mathcal{O}(\delta^2)$ terms, which include the parallel no
 \begin{equation}
     \frac{dv_{\parallel}''}{dt} = -\frac{\mu}{m}\mathbf{b}\cdot\nabla B + \mathbf{b}\cdot\nabla U^2 - \frac{q}{m}\mathbf{b}\cdot\nabla\Phi_1 + \mathcal{O}(\delta^2)
 \end{equation}
+Term 1 of the r.h.s. of the above equation is the mirror force, which has been implemented in GEM.
+
 For any scalar $s(r,\theta,\zeta)$,
 \begin{equation}
     \mathbf{b}\cdot\nabla s=\frac{1}{B}\frac{\psi_p'}{R}\frac{\partial s}{\partial \theta}\hat{\zeta}\cdot\nabla r \times \nabla\theta
@@ -392,17 +394,18 @@ small ordering terms that are NOT implemented for now.
 Above are all the changes for adiabatic electron model. Let's start to test the code. We'll start with the well-known
 Cyclone Base Case (CBC), those parameters could be found in Ref. \cite{gorler}. 
 
-First of all, results of ion temperature gradient (ITG) mode with adiabatic electron response are compared as a baseline
-case. As illustrated in figure 1, results obtained by the two codes (GENE and GEM) show a good consistency and conformity 
-for both ITG growth rate and frequency, from a scanning over toroidal mode number over $n_0\in$ [5,30]. The GENE results 
-correspond to table III and figure 3 in Ref. \cite{gorler}. 
-
-\begin{figure}[h]
+\begin{figure}[htb!]
 \centering
-\includegraphics[width=.9\textwidth]{fig1.jpg}
-\caption{}
+\includegraphics[width=.9\textwidth]{fig1.png}
+\caption{hi}
 \label{fig1}
 \end{figure}
+First of all, results of ion temperature gradient (ITG) mode with adiabatic electron response are compared as a baseline
+case. As illustrated in figure 1, results obtained by the two codes (GENE and GEM) show a good consistency and conformity 
+for both ITG growth rate and frequency, from a scanning over toroidal mode number over $n_0\in$ [5,40]. The GENE results 
+correspond to table III and figure 3 in Ref. \cite{gorler}. 
+
+
 
 \newpage
 \section*{Appendix}\label{app}
