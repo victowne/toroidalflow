@@ -32,12 +32,24 @@ capti = eqdat[:,12]
 captc = eqdat[:,13]
 omg = eqdat[:,14]
 domg = eqdat[:,15]
+rin = 0.2
+rout = 0.8
+lref = 706.71
+r = np.linspace(rin,rout,301)
 
 fig = plt.figure()
-ax = fig.add_subplot(1,1,1)
-ax.plot(i,q)
-ax.set_xlabel(r'$t/\tau_a$',fontdict = font)
-ax.set_ylabel(r'island width',fontdict = font)
+ax = fig.add_subplot(1,2,1)
+ax.plot(r,ti)
+ax.set_xlabel(r'$r$',fontdict = font)
+ax.set_ylabel(r'$T_i$',fontdict = font)
 ax.legend(fontsize=13)
 ax.tick_params(direction='in',labelsize=13)
+ax.set_xlim((rin,rout))
+ax = fig.add_subplot(1,2,2)
+ax.plot(r,capti*lref)
+ax.set_xlabel(r'$r$',fontdict = font)
+ax.set_ylabel(r'$L_{ref}/L_{Ti}$',fontdict = font)
+ax.legend(fontsize=13)
+ax.tick_params(direction='in',labelsize=13)
+ax.set_xlim((rin,rout))
 plt.show()

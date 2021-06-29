@@ -33,7 +33,7 @@ for i in range(nr*nz):
             pt = pt +1
     pt = pt + 1
 
-i = np.argmax(amp[:,nr*nz-1])
+i = np.where(amp == amp.max())[0]
 print('frequency = %f'%vf[i,0])
 
 fig = plt.figure()

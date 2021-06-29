@@ -1,7 +1,7 @@
 #PBS -S /bin/bash
-#PBS -N gem
-#PBS -l nodes=4:ppn=20
-#PBS -q IB2
+#PBS -N test
+#PBS -l nodes=3:ppn=24
+#PBS -q IB3
 #PBS -m b
 #PBS -m e
 #PBS -m a
@@ -11,13 +11,8 @@
 
 ##do your jobp
 cd $PBS_O_WORKDIR
-export OMP_PROC_BIND=spread
-export OMP_PLACES=threads
-export OMP_NUM_THREADS=8
-export Glibc_HOME=/share/apps/soft/glibc-2.14 && \
-export PATH=$Glibc_HOME/bin:$PATH && \
-export LD_LIBRARY_PATH=$Glibc_HOME/lib:$LD_LIBRARY_PATH && \
-export INCLUDE=$Glibc_HOME/include:$INCLUDE
 date
+echo $PBS_JOBID  >> jobid
+mkdir dump out matrix
 mpirun -n 64 ./gem_main >& run.out
 date
