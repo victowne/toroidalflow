@@ -25,7 +25,7 @@ question why you're doing this. If you're patient, the plateaus will become spri
 
 \newpage
 \section{Guiding center drift due to toroidal flow}
-There are three terms needed to be added in the drift velocity of the guiding center $V_{G}$, 
+There are three drift terms needed to be added in the velocity of guiding center $V_{G}$, 
 according to Eq. 21 in \cite{sugama98}, i. e.  
 
 \begin{equation}
@@ -38,7 +38,7 @@ according to Eq. 21 in \cite{sugama98}, i. e.
     \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\mathbf{U} \cdot\nabla\hat{b}). \label{eq3}
 \end{equation}
 
-In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega_0(\psi_p)R^2 \nabla \zeta$,
+In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
 \begin{equation}
     \mathbf{U} \cdot \nabla \mathbf{U} = - \frac{U^2}{R} \hat{R}
 \end{equation}
@@ -131,6 +131,10 @@ Using Eq. \ref{eqdely},
 \end{equation*}
 }
 
+The remainder is $\bf U$ itself. As $\bf U$ is perpendicular to the $(x,z)$ plane, we only need to add
+${\bf U}\cdot\nabla y = U\hat{\zeta}\cdot\nabla y$.
+  
+
 \newpage
 \section{Parallel acceleration due to toroidal flow}
 An auxiliary guiding center variable $v_{\parallel}{''}$ is defined according to 
@@ -188,7 +192,7 @@ The $\partial U/\partial\theta$ and $\partial \Phi_1/\partial\theta$ will be cal
 $\Phi_1$ is the electric potential determined by the charge-neutrality, with $\mathbf{E_n}=-\nabla\Phi_1$. For a plasma with a single ion species with ion 
 temperature $T_i$ and electron temperature $T_e$, 
 \begin{equation}
-    e\Phi_1=\frac{m_i\omega_0^2}{2(1+T_i/T_e)}(R^2 - \langle R^2\rangle).
+    e\Phi_1=\frac{m_i\omega^2(r)}{2(1+T_i/T_e)}(R^2 - \langle R^2\rangle).
 \end{equation}
 Attention, here the bracket $\langle\cdots\rangle$ stands for the flux surface average.
 \begin{equation}
@@ -197,6 +201,10 @@ Attention, here the bracket $\langle\cdots\rangle$ stands for the flux surface a
 Thus,
 \begin{equation}
     \partial_{\theta}(R^2 - \langle R^2\rangle) = 2R\partial_{\theta}R-\frac{R^2}{2\pi}
+\end{equation}
+ 
+\begin{equation}
+    \langle R^2 \rangle=\lim _{\delta \mathcal{V} \rightarrow 0} \frac{1}{\delta \mathcal{V}} \int_{\delta \mathcal{V}} R^2 \mathcal{J} dr d \theta d \zeta=\frac{d r}{d V} \int_{0}^{2 \pi} \int_{0}^{2 \pi} R^2 \mathcal{J} d \theta d \zeta
 \end{equation}
 
 \newpage
@@ -218,7 +226,7 @@ Write $h=h + h_1 + h_2 \cdots$
     =&-\bigg\langle\frac{d\mathbf{R}}{dt}\bigg|_1\bigg\rangle\cdot\frac{\partial f_0}{\partial\mathbf{R}}\\
     &-q\mathbf{v}_g\cdot\nabla\langle\Psi\rangle\frac{f_0}{T}\\
     &+q[\mathbf{U(R)}\cdot\nabla\langle\Psi\rangle-\langle\mathbf{U}\cdot\nabla\Psi\rangle]\frac{f_0}{T}\\
-    &-\frac{q}{\Omega}\bigg\langle(\nabla\Psi\times\mathbf{b})\cdot\nabla\psi_p\ \omega_0'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\bigg\rangle\frac{f_0}{T}\\
+    &-\frac{q}{\Omega}\bigg\langle(\nabla\Psi\times\mathbf{b})\cdot\nabla\psi_p\ \omega'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\bigg\rangle\frac{f_0}{T}\\
     &+S_1+S_2+S_3
 \end{split}
 \end{equation}
@@ -348,8 +356,8 @@ The 4 points are at $\gamma=\pi/2,3\pi/2,0 {\rm \ and\ }\pi$, respectively.
 The second term,
 \begin{equation}
 \begin{split}
-    &-\frac{q}{\Omega}\bigg\langle(\nabla\phi\times\mathbf{b})\cdot\nabla\psi_p\ \omega_0'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\bigg\rangle\frac{f_0}{T}\\
-    =&-\frac{q}{\Omega}\bigg\langle(\nabla\phi\times\mathbf{b})\cdot\nabla\psi_p\bigg\rangle\omega_0'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\frac{f_0}{T}\label{t2}
+    &-\frac{q}{\Omega}\bigg\langle(\nabla\phi\times\mathbf{b})\cdot\nabla\psi_p\ \omega'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\bigg\rangle\frac{f_0}{T}\\
+    =&-\frac{q}{\Omega}\bigg\langle(\nabla\phi\times\mathbf{b})\cdot\nabla\psi_p\bigg\rangle\omega'R\bigg(\frac{B_t}{B_0}v_\parallel'+U\bigg)\frac{f_0}{T}\label{t2}
 \end{split}
 \end{equation}
 
