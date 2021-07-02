@@ -34,7 +34,9 @@ for i in range(nr*nz):
     pt = pt + 1
 
 i = np.where(amp == amp.max())[0]
-print('frequency = %f'%vf[i,0])
+dum = -191616766./191700
+fre = vf[i,0]*dum
+print('frequency = %f'%fre)
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
