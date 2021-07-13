@@ -249,28 +249,6 @@ contains
          psip(i) = f(i)/2/pi/sf(i)*dum
       end do
 
-!twk:assign profile of toroidal flow and phi1---------------------------
-      do i = 0,nr
-         r = rin+i*dr
-         s = r/a
-         omg(i) = 2e-3*(1. - s**2)
-         do j = 0,ntheta
-            ut(i,j) = -omg(i)*radius(i,j)
-         enddo
-      enddo
-      do i = 1,nr-1
-         domg(i) = (omg(i+1) - omg(i-1))/(2*dr)
-      enddo
-      domg(0) = (omg(1) - omg(0))/dr
-      domg(nr) = (omg(nr) - omg(nr-1))/dr
-      do i = 0,nr
-         dum = SUM(radius2(i,1:ntheta))*dth/2./pi
-         do j = 0,ntheta
-            phi1(i,j) = mimp*omg(i)**2/4.*(radius(i,j)**2-dum)
-         enddo
-      enddo
-!-----------------------------------------------------------------------
-
 !compute psi(r)
       dum = 0.
       psi(0) = 0.
@@ -475,6 +453,33 @@ contains
          pthsrbz(i,0) = (srbz(i,1)-srbz(i,0))/dth
          pthsrbz(i,ntheta) = (srbz(i,ntheta)-srbz(i,ntheta-1))/dth
       end do
+
+!twk:assign profile of toroidal flow and phi1---------------------------
+      do i = 0,nr
+         r = rin+i*dr
+         s = r/a
+         omg(i) = 5e-5!*(1. - s**2)
+         do j = 0,ntheta
+            ut(i,j) = -omg(i)*radius(i,j)
+         enddo
+      enddo
+      do i = 1,nr-1
+         domg(i) = (omg(i+1) - omg(i-1))/(2*dr)
+      enddo
+      domg(0) = (omg(1) - omg(0))/dr
+      domg(nr) = (omg(nr) - omg(nr-1))/dr
+      do i = 0,nr
+         dum1 = 0.
+         dum2 = 0.
+         do j = 0,ntheta
+            dum1 = dum1 + jacob(i,j)*r0*rmaj0*radius2(i,j)*dth
+            dum2 = dum2 + jacob(i,j)*r0*rmaj0*dth
+         enddo
+         do j = 0,ntheta
+            phi1(i,j) = mimp*omg(i)**2/4.*(radius(i,j)**2-dum1/dum2)
+         enddo
+      enddo
+!-----------------------------------------------------------------------
 
 !twk:compute hatR.grady, hatZ.grady, hatR.gradz, hatZ.gradz, hatZeta.grady--------
       do i = 0,nr

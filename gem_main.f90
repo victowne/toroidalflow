@@ -769,7 +769,9 @@ subroutine ppush(n,ns)
           +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
           !      eq. 12 dot y 
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
-          -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp)
+          -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp) &
+          !      U dot y
+          +utp*hztdgyp
           !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
           +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
@@ -781,7 +783,7 @@ subroutine ppush(n,ns)
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
           +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0. &
           !twk:  parallel acceleration due to toroidal flow---------------------------------
-          -mu(ns,m)/mims(ns)*bdgbfldp + 2.*utp*bdgutp - q(ns)/mims(ns)*bdgphi1p
+          +2.*utp*bdgutp - q(ns)/mims(ns)*bdgphi1p
           !---------------------------------------------------------------------------------
      edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
@@ -1172,7 +1174,9 @@ subroutine cpush(n,ns)
           +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
           !      eq. 12 dot y 
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
-          -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp)
+          -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp) &
+          !      U dot y
+          +utp*hztdgyp
           !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1.-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
           +q0*br0*enerb/(b*b)*fp/radiusp*dbdrp*grcgtp/jfnp &
@@ -1184,7 +1188,7 @@ subroutine cpush(n,ns)
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
           +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0. &
           !twk:  parallel acceleration due to toroidal flow---------------------------------
-          -mu(ns,m)/mims(ns)*bdgbfldp + 2.*utp*bdgutp - q(ns)/mims(ns)*bdgphi1p
+          +2.*utp*bdgutp - q(ns)/mims(ns)*bdgphi1p
           !---------------------------------------------------------------------------------
 
      edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
