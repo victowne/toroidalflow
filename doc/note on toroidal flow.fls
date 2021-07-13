@@ -149,7 +149,6 @@ INPUT ./fig1.png
 INPUT ./fig1.png
 INPUT note on toroidal flow.bbl
 INPUT note on toroidal flow.bbl
-INPUT c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu00.tfm
 INPUT note on toroidal flow.aux
 INPUT ./note on toroidal flow.out
 INPUT ./note on toroidal flow.out
@@ -167,7 +166,6 @@ INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb
-INPUT c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu00.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu5e.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu6c.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu70.pfb

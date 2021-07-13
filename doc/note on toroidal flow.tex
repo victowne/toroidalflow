@@ -196,16 +196,15 @@ temperature $T_i$ and electron temperature $T_e$,
 \end{equation}
 Attention, here the bracket $\langle\cdots\rangle$ stands for the flux surface average.
 \begin{equation}
-    \langle R^2\rangle = \frac{1}{2\pi}\int_{-\pi}^{\pi}R^2(r,\theta)d\theta
+    \langle R^2 \rangle=\frac{\int_{0}^{2 \pi} \int_{-\pi}^{\pi} R^2 \mathcal{J} d \theta d \zeta}{\int_{0}^{2 \pi} \int_{-\pi}^{\pi} \mathcal{J} d \theta d \zeta}
 \end{equation}
-Thus,
+
 \begin{equation}
-    \partial_{\theta}(R^2 - \langle R^2\rangle) = 2R\partial_{\theta}R-\frac{R^2}{2\pi}
+    \langle R^2 \rangle=\frac{\int_{-\pi}^{\pi} R^2 \mathcal{J} d \theta}{\int_{-\pi}^{\pi} \mathcal{J} d \theta}
 \end{equation}
+
  
-\begin{equation}
-    \langle R^2 \rangle=\lim _{\delta \mathcal{V} \rightarrow 0} \frac{1}{\delta \mathcal{V}} \int_{\delta \mathcal{V}} R^2 \mathcal{J} dr d \theta d \zeta=\frac{d r}{d V} \int_{0}^{2 \pi} \int_{0}^{2 \pi} R^2 \mathcal{J} d \theta d \zeta
-\end{equation}
+
 
 \newpage
 \section{Changes in weight equation} 
@@ -412,7 +411,7 @@ Cyclone Base Case (CBC), those parameters could be found in Ref. \cite{gorler}.
 \begin{figure}[htb!]
 \centering
 \includegraphics[width=.9\textwidth]{fig1.png}
-\caption{hi}
+\caption{CBC benchmark}
 \label{fig1}
 \end{figure}
 First of all, results of ion temperature gradient (ITG) mode with adiabatic electron response are compared as a baseline

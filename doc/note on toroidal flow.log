@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.5.11)  1 JUL 2021 20:35
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.5.11)  13 JUL 2021 08:33
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -415,39 +415,39 @@ File: c70gbsn.fdx 2015/04/18 4.8.4
 
 {c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5]
  [6] [7] [8] [9]
-Overfull \hbox (9.02988pt too wide) in paragraph at lines 316--316
+Overfull \hbox (9.02988pt too wide) in paragraph at lines 315--315
 [] 
  []
 
-[10] [11] [12] <fig1.png, id=156, 576.65437pt x 558.58687pt>
+[10] [11] [12] <fig1.png, id=155, 576.65437pt x 558.58687pt>
 File: fig1.png Graphic file (type png)
  <use fig1.png>
-Package pdftex.def Info: fig1.png used on input line 414.
+Package pdftex.def Info: fig1.png used on input line 413.
 (pdftex.def)             Requested size: 350.99762pt x 340.01302pt.
 
 [13 <./fig1.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 444--461
+Underfull \hbox (badness 10000) in paragraph at lines 443--460
 
  []
 
 [14] (./note on toroidal flow.bbl)
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 466.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 465.
  [15]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 466.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 465.
  (./note on toroidal flow.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 466.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 466.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 465.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 465.
 Package rerunfilecheck Info: File `"note on toroidal flow".out' has not changed
 .
 (rerunfilecheck)             Checksum: 3DA585AF1AA39EDA09F599F99C9DD6BF;274.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 466.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 465.
  ) 
 Here is how much of TeX's memory you used:
- 6896 strings out of 494880
- 96178 string characters out of 6179283
- 193906 words of memory out of 5000000
- 10046 multiletter control sequences out of 15000+600000
- 15096 words of font info for 54 fonts, out of 8000000 for 9000
+ 6893 strings out of 494880
+ 96133 string characters out of 6179283
+ 193917 words of memory out of 5000000
+ 10045 multiletter control sequences out of 15000+600000
+ 14816 words of font info for 53 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
  28i,19n,28p,375b,506s stack positions out of 5000i,500n,10000p,200000b,80000s
 <c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/tex
@@ -463,13 +463,12 @@ exlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/20
 ist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2017/texmf-dist/fonts/
 type1/public/amsfonts/cm/cmti12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/pub
 lic/amsfonts/cm/cmtt12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu
-/gbsnu00.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu5e.pfb><
-c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu6c.pfb><c:/texlive/201
-7/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu70.pfb>
-Output written on "note on toroidal flow.pdf" (15 pages, 218909 bytes).
+/gbsnu5e.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu6c.pfb><
+c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu70.pfb>
+Output written on "note on toroidal flow.pdf" (15 pages, 215684 bytes).
 PDF statistics:
- 256 PDF objects out of 1000 (max. 8388607)
- 214 compressed objects within 3 object streams
- 69 named destinations out of 1000 (max. 500000)
+ 251 PDF objects out of 1000 (max. 8388607)
+ 210 compressed objects within 3 object streams
+ 68 named destinations out of 1000 (max. 500000)
  38 words of extra memory for PDF output out of 10000 (max. 10000000)
 
