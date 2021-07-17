@@ -147,6 +147,9 @@ INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti7.tfm
 INPUT fig1.png
 INPUT ./fig1.png
 INPUT ./fig1.png
+INPUT fig2.png
+INPUT ./fig2.png
+INPUT ./fig2.png
 INPUT note on toroidal flow.bbl
 INPUT note on toroidal flow.bbl
 INPUT note on toroidal flow.aux

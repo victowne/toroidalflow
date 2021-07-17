@@ -25,6 +25,35 @@ question why you're doing this. If you're patient, the plateaus will become spri
 
 \newpage
 \section{Guiding center drift due to toroidal flow}
+In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
+We have 
+\begin{equation}
+    Centrifugal\ force\ :\ F_{cf} = m_a\omega^2R\hat{R}
+\end{equation}
+\begin{equation}
+    Coriolis\ force\ :\ F_{co} = 2m_av_\parallel\hat{b}\times\hat{\omega}
+\end{equation}
+
+The corresponding $F_{cf}$ drift is
+\begin{equation}
+    \frac{F_{cf}\times\hat{b}}{e_aB} = \frac{m_a\omega^2R}{e_aB}\hat{R}\times\hat{b} = \frac{m_aU^2}{e_aBR}\hat{R}\times\hat{b}
+\end{equation} 
+
+and the $F_{co}$ drift is
+\begin{equation}
+    \frac{F_{co}\times\hat{b}}{e_aB} = \frac{2m_av_\parallel}{e_aB} \hat{b}\times\hat{\omega}\times\hat{b}
+\end{equation}
+
+{\color{cyan}
+\begin{equation*}
+    \begin{split}
+        \hat{b}\times\hat{\omega}\times\hat{b} = \hat{b}\times(\hat{\omega}\times\hat{b}) &= \hat{\omega} - (\hat{b}\cdot\hat{\omega})\hat{b}\\
+        &= -\frac{U}{R}\hat{\zeta} + (\hat{b}\cdot\frac{U}{R}\hat{\zeta})\hat{b}\\
+        &= \frac{Uf}{R^2}\hat{b} -\frac{U}{R}\hat{\zeta}
+    \end{split}
+\end{equation*}
+}
+
 There are three drift terms needed to be added in the velocity of guiding center $V_{G}$, 
 according to Eq. 21 in \cite{sugama98}, i. e.  
 
@@ -38,10 +67,11 @@ according to Eq. 21 in \cite{sugama98}, i. e.
     \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\mathbf{U} \cdot\nabla\hat{b}). \label{eq3}
 \end{equation}
 
-In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
+
 \begin{equation}
     \mathbf{U} \cdot \nabla \mathbf{U} = - \frac{U^2}{R} \hat{R}
 \end{equation}
+Eq. \ref{eq1} is consistent with the $F_{cf}$ drift.
 \begin{equation}
     \begin{split}
         \hat{b} \times (\mathbf{U} \cdot \nabla \mathbf{U}) &= \frac{U^2}{R} \hat{R} \times \hat{b}\\
@@ -52,10 +82,10 @@ In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal fl
 
 Then Eq. \ref{eq1} becomes  
 \begin{equation}
-    \frac{cm_aU^2}{e_aB^2R^2}(-f\hat{Z} + \psi_{p}^{'}(r)\frac{\partial r}{\partial R} \hat{\zeta}).
+    \frac{cm_aU^2}{e_aB^2R^2}(-f\hat{Z} + \psi_{p}^{'}(r)\frac{\partial r}{\partial R} \hat{\zeta}).\label{cf}
 \end{equation}
 
-Eq. 6 $\cdot \nabla x$ is
+Eq. \ref{cf} $\cdot \nabla x$ is
 \begin{equation}
     \frac{cm_aU^2}{e_aB^2R^2} \cdot (-f) \frac{\partial r}{\partial Z}.
 \end{equation}
@@ -63,7 +93,7 @@ Eq. 6 $\cdot \nabla x$ is
 To implement this term, a new variable ${\tt ut}$ needed to be declared, representing the equilibrium toroidal flow. 
 Actually, we only need to declare a new variable ${\tt omg}$, then \texttt{ut=-omg*radius}, see \hyperref[app]{\bf Appendix}.
 
-For Eq. 6 $\cdot \nabla y$, 
+For Eq. \ref{cf} $\cdot \nabla y$, 
 \begin{equation}
     y = \frac{r_0}{q_0}\int_{0}^{\theta}\hat{q}(r,\theta^{'})d\theta^{'}-\zeta)=\frac{r_0}{q_0}(q\theta_f-\zeta)
 \end{equation}
@@ -73,7 +103,7 @@ For Eq. 6 $\cdot \nabla y$,
 where $\hat{q} = q \frac{\partial \theta_f}{\partial \theta}$. 
 \begin{equation}
 \begin{split}
-    \textrm{Eq.}\ 6 \cdot \nabla y &= \frac{cm_aU^2}{e_aB^2R^2}(-f\hat{Z} + \psi_p^{'}(r)\frac{\partial r}{\partial R} \hat{\zeta}) \cdot \nabla y \\
+    \textrm{Eq.}\ \ref{cf} \cdot \nabla y &= \frac{cm_aU^2}{e_aB^2R^2}(-f\hat{Z} + \psi_p^{'}(r)\frac{\partial r}{\partial R} \hat{\zeta}) \cdot \nabla y \\
                                    &= \frac{cm_aU^2}{e_aB^2R^2}(-f \frac{\partial y}{\partial r} \frac{\partial r}{\partial Z} - \frac{r_0}{q_0} \hat{q} f 
                                       \frac{\partial \theta}{\partial Z} - \frac{r_0}{q_0R} \psi_p^{'}(r)\frac{\partial r}{\partial R}), 
 \end{split}
@@ -89,7 +119,7 @@ Still in the $(R,Z,\zeta)$ coordinate, one could find Eq. \ref{eq2} is identical
 \begin{equation}
     \mathbf{U}\cdot\nabla\hat{b} = \hat{b}\cdot\nabla\mathbf{U} = - \frac{Uf}{R^2B}\hat{R} - \frac{U}{R^2B}\psi_p^{'}(r)\frac{\partial r}{\partial Z}\hat{\zeta}.
 \end{equation}
-To derive Eq. 2 or Eq. 3, 
+To derive Eq. \ref{eq2} or Eq. \ref{eq3}, 
 \begin{equation}
 \begin{split}
     &\ \ \ \  \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\mathbf{U}\cdot\nabla\hat{b}) \\&= \frac{cm_av_{\parallel}^{'}}{e_aB}
@@ -410,15 +440,23 @@ Cyclone Base Case (CBC), those parameters could be found in Ref. \cite{gorler}.
 
 \begin{figure}[htb!]
 \centering
-\includegraphics[width=.9\textwidth]{fig1.png}
+\includegraphics[width=1.\textwidth]{fig1.png}
 \caption{CBC benchmark}
 \label{fig1}
 \end{figure}
 First of all, results of ion temperature gradient (ITG) mode with adiabatic electron response are compared as a baseline
-case. As illustrated in figure 1, results obtained by the two codes (GENE and GEM) show a good consistency and conformity 
+case. As illustrated in figure \ref{fig1}, results obtained by the two codes (GENE and GEM) show a good consistency and conformity 
 for both ITG growth rate and frequency, from a scanning over toroidal mode number over $n_0\in$ [5,40]. The GENE results 
 correspond to table III and figure 3 in Ref. \cite{gorler}. 
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=1.\textwidth]{fig2.png}
+\caption{ITG growth rate and frequency with rigid flow.}
+\label{fig2}
+\end{figure}
 
+Considering a rigid flow profile $\omega(r)=\omega_0$, the corresponding growth rate and mode frequency are shown in 
+figure \ref{fig2}. Strong suppression effect on ITG can be found for sufficiently large toroidal flow, $v_t\sim0.1v_{th}$. 
 
 
 \newpage

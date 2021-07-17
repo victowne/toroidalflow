@@ -1,13 +1,13 @@
 # Fdb version 3
-["bibtex note on toroidal flow"] 1626136403 "note on toroidal flow.aux" "note on toroidal flow.bbl" "note on toroidal flow" 1626136406
+["bibtex note on toroidal flow"] 1626513648 "note on toroidal flow.aux" "note on toroidal flow.bbl" "note on toroidal flow" 1626514078
   "c:/texlive/2017/texmf-dist/bibtex/bst/base/unsrt.bst" 1526001969 18030 1376b4b231b50c66211e47e42eda2875 ""
-  "note on toroidal flow.aux" 1626136405 2155 9482954f5885fa3ab32a7b2701fc7336 ""
+  "note on toroidal flow.aux" 1626514078 2458 6c3dbd0c984c0659c3fe6c44d526d855 ""
   "refs.bib" 1625625214 1516 f853be585adc21800d46af4fc2b72e5f ""
   (generated)
   "note on toroidal flow.bbl"
   "note on toroidal flow.blg"
-["pdflatex"] 1626136403 "c:/Users/Administrator/Desktop/doc/note on toroidal flow.tex" "note on toroidal flow.pdf" "note on toroidal flow" 1626136406
-  "c:/Users/Administrator/Desktop/doc/note on toroidal flow.tex" 1626136393 23170 f3869fa1ea990d65c08ebde1a8c05bde ""
+["pdflatex"] 1626514077 "c:/Users/Administrator/Desktop/doc/note on toroidal flow.tex" "note on toroidal flow.pdf" "note on toroidal flow" 1626514078
+  "c:/Users/Administrator/Desktop/doc/note on toroidal flow.tex" 1626514076 24621 3f359d7231123d850d31d806ac55576d ""
   "c:/texlive/2017/texmf-dist/fonts/map/fontname/texfonts.map" 1526002315 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
   "c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu5e.tfm" 1526001879 1284 f389b9d7dd0d0e5b3efa3247baab4741 ""
   "c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu6c.tfm" 1526001879 1264 b24fc96830de1d2e65d12183280784ca ""
@@ -104,15 +104,16 @@
   "c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1526003230 2266442 f3015e588f2ceeed5fde5142f8d448bf ""
   "c:/texlive/2017/texmf-var/web2c/pdftex/pdflatex.fmt" 1526003259 862747 8b737ea66a70442a287cb1478a4ba7b9 ""
   "c:/texlive/2017/texmf.cnf" 1526003189 673 4ae7b2f49cee444c5343a45b5d0f169c ""
-  "fig1.png" 1624582383 56480 92917f7e82d94f7d7d13e21b8d6ff4f4 ""
-  "note on toroidal flow.aux" 1626136405 2155 9482954f5885fa3ab32a7b2701fc7336 ""
-  "note on toroidal flow.bbl" 1626136403 922 bc7a3a098aab7928c3d86453b7c9d31c "bibtex note on toroidal flow"
-  "note on toroidal flow.out" 1626136405 274 3da585af1aa39eda09f599f99c9dd6bf ""
-  "note on toroidal flow.tex" 1626136393 23170 f3869fa1ea990d65c08ebde1a8c05bde ""
-  "note on toroidal flow.toc" 1626136405 355 5854b402cb9002c5cee69c1629fa8d61 ""
+  "fig1.png" 1626513413 145644 d4357dbc1baa14f36693770c66c745e4 ""
+  "fig2.png" 1626513432 103791 13337a760cf1659417b029c8c1829e43 ""
+  "note on toroidal flow.aux" 1626514078 2458 6c3dbd0c984c0659c3fe6c44d526d855 ""
+  "note on toroidal flow.bbl" 1626513649 922 bc7a3a098aab7928c3d86453b7c9d31c "bibtex note on toroidal flow"
+  "note on toroidal flow.out" 1626514078 274 3da585af1aa39eda09f599f99c9dd6bf ""
+  "note on toroidal flow.tex" 1626514076 24621 3f359d7231123d850d31d806ac55576d ""
+  "note on toroidal flow.toc" 1626514078 355 49f94520c3d7d5a119dbccbcd5532d33 ""
   (generated)
-  "note on toroidal flow.log"
+  "note on toroidal flow.aux"
   "note on toroidal flow.toc"
+  "note on toroidal flow.log"
   "note on toroidal flow.pdf"
   "note on toroidal flow.out"
-  "note on toroidal flow.aux"
