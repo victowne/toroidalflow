@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.5.11)  17 JUL 2021 17:27
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.5.11)  18 JUL 2021 09:25
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -419,13 +419,13 @@ Overfull \hbox (9.02988pt too wide) in paragraph at lines 345--345
 [] 
  []
 
-[11] [12] [13] <fig1.png, id=171, 830.79616pt x 336.6423pt>
+[11] [12] [13] <fig1.png, id=173, 830.79616pt x 336.6423pt>
 File: fig1.png Graphic file (type png)
  <use fig1.png>
 Package pdftex.def Info: fig1.png used on input line 443.
 (pdftex.def)             Requested size: 390.0pt x 158.03183pt.
 
-<fig2.png, id=175, 766.062pt x 340.61165pt>
+<fig2.png, id=177, 766.062pt x 340.61165pt>
 File: fig2.png Graphic file (type png)
  <use fig2.png>
 Package pdftex.def Info: fig2.png used on input line 453.
@@ -449,13 +449,13 @@ Package rerunfilecheck Info: File `"note on toroidal flow".out' has not changed
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 503.
  ) 
 Here is how much of TeX's memory you used:
- 6907 strings out of 494880
- 96276 string characters out of 6179283
- 194056 words of memory out of 5000000
- 10051 multiletter control sequences out of 15000+600000
+ 6909 strings out of 494880
+ 96301 string characters out of 6179283
+ 194087 words of memory out of 5000000
+ 10052 multiletter control sequences out of 15000+600000
  14816 words of font info for 53 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 28i,19n,28p,375b,506s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 28i,19n,28p,375b,508s stack positions out of 5000i,500n,10000p,200000b,80000s
 <c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/tex
 live/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><c:/texlive/2017/
 texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2017/texmf-dis
@@ -471,10 +471,10 @@ type1/public/amsfonts/cm/cmti12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/pub
 lic/amsfonts/cm/cmtt12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu
 /gbsnu5e.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu6c.pfb><
 c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu70.pfb>
-Output written on "note on toroidal flow.pdf" (17 pages, 367310 bytes).
+Output written on "note on toroidal flow.pdf" (17 pages, 367047 bytes).
 PDF statistics:
- 277 PDF objects out of 1000 (max. 8388607)
- 231 compressed objects within 3 object streams
- 75 named destinations out of 1000 (max. 500000)
+ 279 PDF objects out of 1000 (max. 8388607)
+ 233 compressed objects within 3 object streams
+ 76 named destinations out of 1000 (max. 500000)
  43 words of extra memory for PDF output out of 10000 (max. 10000000)
 

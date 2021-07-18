@@ -10,7 +10,7 @@
 
 \begin{document}
 \begin{CJK*}{UTF8}{gbsn}
-\title{\textbf{Adding toroidal flow in GEM for adiabatic electron model}}
+\title{\textbf{Implementation of sonic level toroidal flow in GEM with adiabatic electrons}}
 \author{汤炜康}
 \date{\today}
 \maketitle
@@ -26,12 +26,12 @@ question why you're doing this. If you're patient, the plateaus will become spri
 \newpage
 \section{Guiding center drift due to toroidal flow}
 In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
-We have 
+In the rotating moving frame\cite{artun1994}, we have ${\mathbf v'=\mathbf v-\mathbf U}$. Then 
 \begin{equation}
-    Centrifugal\ force\ :\ F_{cf} = m_a\omega^2R\hat{R}
+    {\rm Centrifugal\ force}\ :\ F_{cf} = m_a\omega^2R\hat{R}
 \end{equation}
 \begin{equation}
-    Coriolis\ force\ :\ F_{co} = 2m_av_\parallel\hat{b}\times\hat{\omega}
+    {\rm Coriolis\ force}\ :\ F_{co} = 2m_av'_\parallel\hat{b}\times\hat{\omega}
 \end{equation}
 
 The corresponding $F_{cf}$ drift is
@@ -41,7 +41,7 @@ The corresponding $F_{cf}$ drift is
 
 and the $F_{co}$ drift is
 \begin{equation}
-    \frac{F_{co}\times\hat{b}}{e_aB} = \frac{2m_av_\parallel}{e_aB} \hat{b}\times\hat{\omega}\times\hat{b}
+    \frac{F_{co}\times\hat{b}}{e_aB} = \frac{2m_av'_\parallel}{e_aB} \hat{b}\times\hat{\omega}\times\hat{b}
 \end{equation}
 
 {\color{cyan}

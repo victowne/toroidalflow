@@ -3,44 +3,44 @@ Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
 The top-level auxiliary file: note on toroidal flow.aux
 The style file: unsrt.bst
 Database file #1: refs.bib
-You've used 3 entries,
+You've used 4 entries,
             1791 wiz_defined-function locations,
-            469 strings with 4229 characters,
-and the built_in function-call counts, 992 in all, are:
-= -- 86
-> -- 45
+            476 strings with 4374 characters,
+and the built_in function-call counts, 1240 in all, are:
+= -- 109
+> -- 53
 < -- 1
-+ -- 16
-- -- 13
-* -- 76
-:= -- 158
-add.period$ -- 10
-call.type$ -- 3
-change.case$ -- 3
++ -- 19
+- -- 15
+* -- 96
+:= -- 196
+add.period$ -- 13
+call.type$ -- 4
+change.case$ -- 4
 chr.to.int$ -- 0
-cite$ -- 3
-duplicate$ -- 42
-empty$ -- 92
-format.name$ -- 13
-if$ -- 225
+cite$ -- 4
+duplicate$ -- 51
+empty$ -- 118
+format.name$ -- 15
+if$ -- 281
 int.to.chr$ -- 0
-int.to.str$ -- 3
-missing$ -- 3
-newline$ -- 18
-num.names$ -- 5
-pop$ -- 5
+int.to.str$ -- 4
+missing$ -- 4
+newline$ -- 23
+num.names$ -- 6
+pop$ -- 6
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 25
+skip$ -- 29
 stack$ -- 0
-substring$ -- 81
-swap$ -- 14
+substring$ -- 108
+swap$ -- 15
 text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
 warning$ -- 0
-while$ -- 8
-width$ -- 4
-write$ -- 38
+while$ -- 10
+width$ -- 5
+write$ -- 49
