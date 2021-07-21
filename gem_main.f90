@@ -753,9 +753,9 @@ subroutine ppush(n,ns)
      dum1 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
      xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp &
-          !twk:  eq. 6 dot x in my note-----------------------------------------------------
+          !twk:  centrifugal drift dot gradx -----------------------------------------------
           -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
-          !      eq. 12 dot x 
+          !      coriolis drift dot gradx
           -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
           + fp**2)*srbzp
           !---------------------------------------------------------------------------------
@@ -765,12 +765,12 @@ subroutine ppush(n,ns)
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -mims(ns)*vpar**2/(q(ns)*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
           -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp & 
-          !twk:  eq. 6 dot y in my note-----------------------------------------------------
+          !twk:  centrifugal drift dot grady -----------------------------------------------
           +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
-          !      eq. 12 dot y 
+          !      coriolis drift dot grady
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
           -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp) &
-          !      U dot y
+          !      U dot grady
           +utp*hztdgyp
           !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
@@ -792,7 +792,7 @@ subroutine ppush(n,ns)
           !twk: -q<rho . nabla_U . nabla_phi>----------------------------------------------------------
           +q(ns)*( (domgp*radiusp*srbrp - utp/radiusp)*rhoreyp + domgp*radiusp*srbzp*rhozeyp)*hztdgyp &
           +q(ns)*utp/radiusp*(rhoztexp*srbrp + rhozteyp*hrdgyp + rhoztezp*hrdgzp) &
-          !    eq. 36 note the sign, small orderings are omitted, perhaps include them in future
+          !     domega term
           +mims(ns)/bfldp*psipp*bdgxcgyp*eyp*domgp*radiusp*(fp/radiusp/bfldp*vpar + utp)
           !--------------------------------------------------------------------------------------------
 
@@ -1158,9 +1158,9 @@ subroutine cpush(n,ns)
      dum1 = 1./b*lr0/q0*qhatp*fp/radiusp*grcgtp
      vxdum = (eyp/b+vpar/b*delbxp)*dum1
      xdot = vxdum*nonlin(ns) -iorb*enerb/bfldp/bfldp*fp/radiusp*dbdtp*grcgtp &
-          !twk:  eq. 6 dot x in my note-----------------------------------------------------
+          !twk:  centrifugal drift dot gradx -----------------------------------------------
           -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
-          !      eq. 12 dot x 
+          !      coriolis drift dot gradx 
           -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
           + fp**2)*srbzp
           !---------------------------------------------------------------------------------
@@ -1170,12 +1170,12 @@ subroutine cpush(n,ns)
           +enerb/(bfldp**2)*psipp*lr0/q0/radiusp**2*(dbdrp*grp**2+dbdtp*grdgtp) &
           -mims(ns)*vpar**2/(q(ns)*bstar*b)*(psip2p*grp**2/radiusp+curvbzp)*lr0/(radiusp*q0) &
           -dipdrp/radiusp*mims(ns)*vpar**2/(q(ns)*bstar*b)*grcgtp*lr0/q0*qhatp & 
-          !twk:  eq. 6 dot y in my note-----------------------------------------------------
+          !twk:  centrifugal drift dot grady -----------------------------------------------
           +mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*(-fp*hzdgyp+psipp*srbrp*hztdgyp) &
-          !      eq. 12 dot y 
+          !      coriolis drift dot grady 
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
           -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp) &
-          !      U dot y
+          !      U dot grady
           +utp*hztdgyp
           !---------------------------------------------------------------------------------
      zdot =  vpar*b/bstar*(1.-tor+tor*q0*br0/radiusp/b*psipp*grcgtp)/jfnp &
@@ -1198,7 +1198,7 @@ subroutine cpush(n,ns)
           !twk: -q<rho . nabla_U . nabla_phi>----------------------------------------------------------
           +q(ns)*( (domgp*radiusp*srbrp - utp/radiusp)*rhoreyp + domgp*radiusp*srbzp*rhozeyp)*hztdgyp &
           +q(ns)*utp/radiusp*(rhoztexp*srbrp + rhozteyp*hrdgyp + rhoztezp*hrdgzp) &
-          !    eq. 36 note the sign, small orderings are omitted, perhaps include them in future
+          !     domega term 
           +mims(ns)/bfldp*psipp*bdgxcgyp*eyp*domgp*radiusp*(fp/radiusp/bfldp*vpar + utp)
           !--------------------------------------------------------------------------------------------
 
