@@ -1,4 +1,4 @@
 \contentsline {section}{\numberline {1}Guiding center drift due to toroidal flow}{3}{section.1}
-\contentsline {section}{\numberline {2}Parallel acceleration due to toroidal flow}{7}{section.2}
+\contentsline {section}{\numberline {2}Parallel acceleration due to toroidal flow}{8}{section.2}
 \contentsline {section}{\numberline {3}Changes in weight equation}{9}{section.3}
 \contentsline {section}{\numberline {4}Verification of the model}{14}{section.4}

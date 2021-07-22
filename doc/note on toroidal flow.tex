@@ -25,7 +25,7 @@ question why you're doing this. If you're patient, the plateaus will become spri
 
 \newpage
 \section{Guiding center drift due to toroidal flow}
-In the right-handed coordinate system (R,Z,$\zeta$), considering the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
+In the right-handed coordinate system (R,Z,$\zeta$), consider the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
 In the rotating moving frame\cite{artun1994}, we have ${\mathbf v'=\mathbf v-\mathbf U}$. Then 
 \begin{equation}
     {\rm Centrifugal\ force}\ :\ F_{cf} = m_a\omega^2R\hat{R}
@@ -44,17 +44,19 @@ and the $F_{co}$ drift is
     \frac{F_{co}\times\hat{b}}{e_aB} = \frac{2m_av'_\parallel}{e_aB} \hat{b}\times\hat{\omega}\times\hat{b}
 \end{equation}
 
-{\color{cyan}
-\begin{equation*}
+{\color{black}
+\begin{equation}
+    \hat{b}\times\hat{\omega}\times\hat{b} = \hat{b}\times(\hat{\omega}\times\hat{b})
+\end{equation}
+\begin{equation}
     \begin{split}
-        \hat{b}\times\hat{\omega}\times\hat{b} = \hat{b}\times(\hat{\omega}\times\hat{b}) &= \hat{\omega} - (\hat{b}\cdot\hat{\omega})\hat{b}\\
-        &= -\frac{U}{R}\hat{\zeta} + (\hat{b}\cdot\frac{U}{R}\hat{\zeta})\hat{b}\\
-        &= \frac{Uf}{R^2}\hat{b} -\frac{U}{R}\hat{\zeta}
+        \hat{\omega}\times\hat{b} &= -\frac{U}{R}\hat{Z}\times(\frac{f}{RB}\hat{\zeta} + \frac{\psi_p'}{RB}(\frac{\partial r}{\partial R}\hat{Z} - \frac{\partial r}{\partial Z}\hat{R}))\\
+        &= -\frac{Uf}{R^2B}\hat{R} -\frac{U\psi_p'}{R^2B}\frac{\partial r}{\partial Z}\hat{\zeta}
     \end{split}
-\end{equation*}
+\end{equation}
 }
 
-There are three drift terms needed to be added in the velocity of guiding center $V_{G}$, 
+There are four drift terms needed to be added in the velocity of guiding center $V_{G}$, 
 according to Eq. 21 in \cite{sugama98}, i. e.  
 
 \begin{equation}
@@ -64,9 +66,11 @@ according to Eq. 21 in \cite{sugama98}, i. e.
     \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\hat{b} \cdot \nabla \mathbf{U}), \label{eq2}
 \end{equation}
 \begin{equation}
-    \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\mathbf{U} \cdot\nabla\hat{b}). \label{eq3}
+    \frac{cm_av_{\parallel}^{'}}{e_aB} \hat{b} \times (\mathbf{U} \cdot\nabla\hat{b}), \label{eq3}
 \end{equation}
-
+\begin{equation}
+    \frac{\hat{b}\times\nabla\Phi_1}{B}. \label{eq4}
+\end{equation}
 
 \begin{equation}
     \mathbf{U} \cdot \nabla \mathbf{U} = - \frac{U^2}{R} \hat{R}
@@ -119,6 +123,8 @@ Still in the $(R,Z,\zeta)$ coordinate, one could find Eq. \ref{eq2} is identical
 \begin{equation}
     \mathbf{U}\cdot\nabla\hat{b} = \hat{b}\cdot\nabla\mathbf{U} = - \frac{Uf}{R^2B}\hat{R} - \frac{U}{R^2B}\psi_p^{'}(r)\frac{\partial r}{\partial Z}\hat{\zeta}.
 \end{equation}
+These two terms correspond to the Coriolis force drift.
+
 To derive Eq. \ref{eq2} or Eq. \ref{eq3}, 
 \begin{equation}
 \begin{split}
@@ -161,6 +167,38 @@ Using Eq. \ref{eqdely},
 \end{equation*}
 }
 
+
+In the last term, $\Phi_1$ is the electric potential determined by the charge neutrality, with $\mathbf{E_n}=-\nabla\Phi_1$. For a plasma with a single ion species with ion 
+temperature $T_i$ and electron temperature $T_e$, 
+\begin{equation}
+    e\Phi_1=\frac{m_i\omega^2(r)}{2(1+T_i/T_e)}(R^2 - \langle R^2\rangle).
+\end{equation}
+Attention, here the bracket $\langle\cdots\rangle$ stands for the flux surface average.
+\begin{equation}
+    \langle R^2 \rangle=\frac{\int_{0}^{2 \pi} \int_{-\pi}^{\pi} R^2 \mathcal{J} d \theta d \zeta}{\int_{0}^{2 \pi} \int_{-\pi}^{\pi} \mathcal{J} d \theta d \zeta}
+\end{equation}
+
+\begin{equation}
+    \langle R^2 \rangle=\frac{\int_{-\pi}^{\pi} R^2 \mathcal{J} d \theta}{\int_{-\pi}^{\pi} \mathcal{J} d \theta}
+\end{equation}
+
+For the $\mathbf{E\times B}$ drift due to $\Phi_1$,
+\begin{equation}
+    \begin{split}
+        \frac{1}{B}\hat{b}\times\nabla\Phi_1\cdot\nabla x &= \frac{1}{B}\nabla\Phi_1\times\nabla x\cdot\hat{b}\\
+        &= \frac{1}{B}\bigg(\frac{\partial\Phi_1}{\partial r}\nabla r + \frac{\partial\Phi_1}{\partial \theta}\nabla \theta\bigg)\times\nabla x \cdot \hat{b}\\
+        &= - \frac{\partial\Phi_1}{\partial \theta}\frac{f}{RB^2}|\nabla r\times\nabla \theta|
+    \end{split}
+\end{equation}
+\begin{equation}
+    \begin{split}
+        \frac{1}{B}\hat{b}\times\nabla\Phi_1\cdot\nabla y =& \frac{1}{B}\nabla\Phi_1\times\nabla y\cdot\hat{b}\\
+        =& \frac{1}{B}\bigg(\frac{\partial\Phi_1}{\partial r}\nabla r + \frac{\partial\Phi_1}{\partial \theta}\nabla \theta\bigg)\times\bigg(\frac{\partial y}{\partial r} \nabla r + \frac{r_0}{q_0} \hat{q} \nabla \theta - \frac{r_0}{q_0} \nabla \zeta\bigg) \cdot \hat{b}\\
+        =& - \frac{\partial y}{\partial r}\frac{\partial\Phi_1}{\partial \theta}\frac{f}{RB^2}|\nabla r\times\nabla \theta| + \frac{r_0}{q_0}\hat{q}\frac{\partial\Phi_1}{\partial r}\frac{f}{RB^2}|\nabla r\times\nabla \theta|\\
+         &{\color{black}- \frac{r_0}{q_0}\frac{\partial\Phi_1}{\partial r}\nabla r\times\nabla\zeta\cdot\hat{b} - \frac{r_0}{q_0}\frac{\partial\Phi_1}{\partial \theta}\nabla\theta\times\nabla\zeta\cdot\hat{b}}
+    \end{split}
+\end{equation}
+
 The remainder is $\bf U$ itself. As $\bf U$ is perpendicular to the $(x,z)$ plane, we only need to add
 ${\bf U}\cdot\nabla y = U\hat{\zeta}\cdot\nabla y$.
   
@@ -186,6 +224,10 @@ We will neglect the $\mathcal{O}(\delta^2)$ terms, which include the parallel no
 \end{equation}
 Term 1 of the r.h.s. of the above equation is the mirror force, which has been implemented in GEM.
 
+\begin{equation}
+    \mathbf{b}\cdot\nabla U^2=2U\hat{b}\cdot\nabla U=2U\hat{b}\cdot\nabla(-\omega R)=2\omega^2R\hat{b}\cdot\nabla R
+\end{equation}
+
 For any scalar $s(r,\theta,\zeta)$,
 \begin{equation}
     \mathbf{b}\cdot\nabla s=\frac{1}{B}\frac{\psi_p'}{R}\frac{\partial s}{\partial \theta}\hat{\zeta}\cdot\nabla r \times \nabla\theta
@@ -206,34 +248,13 @@ For any scalar $s(r,\theta,\zeta)$,
 
 So,
 \begin{equation}
-    \mathbf{b}\cdot\nabla B=\frac{1}{B}\frac{\psi_p'}{R}\frac{\partial B}{\partial \theta}\hat{\zeta}\cdot\nabla r \times \nabla\theta
-\end{equation}
-\begin{equation}
-    \mathbf{b}\cdot\nabla U^2=\frac{2U}{B}\frac{\psi_p'}{R}\frac{\partial U}{\partial \theta}\hat{\zeta}\cdot\nabla r \times \nabla\theta,
-\end{equation}
-\begin{equation}
     \mathbf{b}\cdot\nabla \Phi_1=\frac{1}{B}\frac{\psi_p'}{R}\frac{\partial \Phi_1}{\partial \theta}\hat{\zeta}\cdot\nabla r \times \nabla\theta
 \end{equation}
+
 with
 \begin{equation}
     \hat{\zeta}\cdot\nabla r \times \nabla\theta = |\nabla r \times \nabla\theta|.
 \end{equation}
-The $\partial U/\partial\theta$ and $\partial \Phi_1/\partial\theta$ will be calculated in the \texttt{gem\_equil.f90}. Others are all existing variables in GEM. 
-$\Phi_1$ is the electric potential determined by the charge-neutrality, with $\mathbf{E_n}=-\nabla\Phi_1$. For a plasma with a single ion species with ion 
-temperature $T_i$ and electron temperature $T_e$, 
-\begin{equation}
-    e\Phi_1=\frac{m_i\omega^2(r)}{2(1+T_i/T_e)}(R^2 - \langle R^2\rangle).
-\end{equation}
-Attention, here the bracket $\langle\cdots\rangle$ stands for the flux surface average.
-\begin{equation}
-    \langle R^2 \rangle=\frac{\int_{0}^{2 \pi} \int_{-\pi}^{\pi} R^2 \mathcal{J} d \theta d \zeta}{\int_{0}^{2 \pi} \int_{-\pi}^{\pi} \mathcal{J} d \theta d \zeta}
-\end{equation}
-
-\begin{equation}
-    \langle R^2 \rangle=\frac{\int_{-\pi}^{\pi} R^2 \mathcal{J} d \theta}{\int_{-\pi}^{\pi} \mathcal{J} d \theta}
-\end{equation}
-
- 
 
 
 \newpage
@@ -483,7 +504,9 @@ omg(nr)---$\omega$, angular frequency of toroidal flow\\
 domg(nr)---d$\omega$/dr\\
 ut(nr,ntheta)---U, toroidal flow\\
 phi1(nr,ntheta)---$\Phi_1$\\
-bdgut,bdgbfld,bdgphi1::(nr,ntheta)---${\bf b}\cdot\nabla{\rm U},\ {\bf b}\cdot\nabla{\rm B},\ {\bf b}\cdot\nabla{\rm \Phi_1}$\\
+dphi1dr(nr,ntheta)---$\partial\Phi_1/\partial r$\\
+dphi1dth(nr,ntheta)---$\partial\Phi_1/\partial \theta$\\
+bdgphi1::(nr,ntheta)---${\bf b}\cdot\nabla{\rm \Phi_1}$\\
 hrdgy(nr,ntheta)---$\hat{R}\cdot\nabla y$\\
 hzdgy(nr,ntheta)---$\hat{Z}\cdot\nabla y$\\
 hrdgz(nr,ntheta)---$\hat{R}\cdot\nabla z$\\

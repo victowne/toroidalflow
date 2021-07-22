@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.5.11)  18 JUL 2021 09:25
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.5.11)  22 JUL 2021 17:00
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -415,43 +415,43 @@ File: c70gbsn.fdx 2015/04/18 4.8.4
 
 {c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5]
  [6] [7] [8] [9] [10]
-Overfull \hbox (9.02988pt too wide) in paragraph at lines 345--345
+Overfull \hbox (9.02988pt too wide) in paragraph at lines 366--366
 [] 
  []
 
-[11] [12] [13] <fig1.png, id=173, 830.79616pt x 336.6423pt>
+[11] [12] [13] <fig1.png, id=177, 830.79616pt x 336.6423pt>
 File: fig1.png Graphic file (type png)
  <use fig1.png>
-Package pdftex.def Info: fig1.png used on input line 443.
+Package pdftex.def Info: fig1.png used on input line 464.
 (pdftex.def)             Requested size: 390.0pt x 158.03183pt.
 
-<fig2.png, id=177, 766.062pt x 340.61165pt>
+<fig2.png, id=181, 766.062pt x 340.61165pt>
 File: fig2.png Graphic file (type png)
  <use fig2.png>
-Package pdftex.def Info: fig2.png used on input line 453.
+Package pdftex.def Info: fig2.png used on input line 474.
 (pdftex.def)             Requested size: 390.0pt x 173.40819pt.
  [14 <./fig1.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 481--498
+Underfull \hbox (badness 10000) in paragraph at lines 502--521
 
  []
 
 [15 <./fig2.png>] [16] (./note on toroidal flow.bbl)
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 503.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 526.
  [17]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 503.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 526.
 
 (./note on toroidal flow.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 503.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 503.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 526.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 526.
 Package rerunfilecheck Info: File `"note on toroidal flow".out' has not changed
 .
 (rerunfilecheck)             Checksum: 3DA585AF1AA39EDA09F599F99C9DD6BF;274.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 503.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 526.
  ) 
 Here is how much of TeX's memory you used:
- 6909 strings out of 494880
- 96301 string characters out of 6179283
- 194087 words of memory out of 5000000
+ 6913 strings out of 494880
+ 96340 string characters out of 6179283
+ 194158 words of memory out of 5000000
  10052 multiletter control sequences out of 15000+600000
  14816 words of font info for 53 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
@@ -471,10 +471,10 @@ type1/public/amsfonts/cm/cmti12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/pub
 lic/amsfonts/cm/cmtt12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu
 /gbsnu5e.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu6c.pfb><
 c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu70.pfb>
-Output written on "note on toroidal flow.pdf" (17 pages, 367047 bytes).
+Output written on "note on toroidal flow.pdf" (17 pages, 367686 bytes).
 PDF statistics:
- 279 PDF objects out of 1000 (max. 8388607)
- 233 compressed objects within 3 object streams
- 76 named destinations out of 1000 (max. 500000)
+ 284 PDF objects out of 1000 (max. 8388607)
+ 238 compressed objects within 3 object streams
+ 80 named destinations out of 1000 (max. 500000)
  43 words of extra memory for PDF output out of 10000 (max. 10000000)
 
