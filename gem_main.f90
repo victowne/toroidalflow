@@ -570,7 +570,7 @@ subroutine ppush(n,ns)
   real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
   !twk: declare some variables --------------------------------------------------
   real :: domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgxcgyp
-  real :: bdgbfldp,bdgutp,bdgphi1p,sn(4),cn(4)              
+  real :: dphi1drp,dphi1dthp,bdgphi1p,sn(4),cn(4)              
   real :: e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp
   !------------------------------------------------------------------------------
 
@@ -588,7 +588,7 @@ subroutine ppush(n,ns)
 !$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,kap,dum1,vxdum,xdot,ydot,zdot) &
 !$omp private(pzd0,pzdot,edot,dum,laps,qr) &
 !$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
-!$omp private(domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgbfldp,bdgutp,bdgphi1p) &
+!$omp private(domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,dphi1drp,dphi1dthp,bdgphi1p) &
 !$omp private(e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp,bdgxcgyp) &
 !$omp reduction(+: mynopi)
   do m=1,mm(ns)
@@ -661,10 +661,10 @@ subroutine ppush(n,ns)
           +wx1*wz0*hrdgz(i+1,k)+wx1*wz1*hrdgz(i+1,k+1) 
      hzdgzp = wx0*wz0*hzdgz(i,k)+wx0*wz1*hzdgz(i,k+1) &
           +wx1*wz0*hzdgz(i+1,k)+wx1*wz1*hzdgz(i+1,k+1) 
-     bdgbfldp = wx0*wz0*bdgbfld(i,k)+wx0*wz1*bdgbfld(i,k+1) &
-          +wx1*wz0*bdgbfld(i+1,k)+wx1*wz1*bdgbfld(i+1,k+1) 
-     bdgutp = wx0*wz0*bdgut(i,k)+wx0*wz1*bdgut(i,k+1) &
-          +wx1*wz0*bdgut(i+1,k)+wx1*wz1*bdgut(i+1,k+1) 
+     dphi1drp = wx0*wz0*dphi1dr(i,k)+wx0*wz1*dphi1dr(i,k+1) &
+          +wx1*wz0*dphi1dr(i+1,k)+wx1*wz1*dphi1dr(i+1,k+1) 
+     dphi1dthp = wx0*wz0*dphi1dth(i,k)+wx0*wz1*dphi1dth(i,k+1) &
+          +wx1*wz0*dphi1dth(i+1,k)+wx1*wz1*dphi1dth(i+1,k+1) 
      bdgphi1p = wx0*wz0*bdgphi1(i,k)+wx0*wz1*bdgphi1(i,k+1) &
           +wx1*wz0*bdgphi1(i+1,k)+wx1*wz1*bdgphi1(i+1,k+1) 
      e1rp = wx0*wz0*e1r(i,k)+wx0*wz1*e1r(i,k+1) &
@@ -757,7 +757,9 @@ subroutine ppush(n,ns)
           -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
           !      coriolis drift dot gradx
           -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
-          + fp**2)*srbzp
+          + fp**2)*srbzp &
+          !      phi1 E x B dot gradx
+          -dphi1dthp*fp/radiusp/bfldp**2*grcgtp
           !---------------------------------------------------------------------------------
      ydot = (-exp1/b+vpar/b*delbyp)*dum1*nonlin(ns) &
           +iorb*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
@@ -770,6 +772,8 @@ subroutine ppush(n,ns)
           !      coriolis drift dot grady
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
           -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp) &
+          !      phi1 E x B dot grady
+          +(r0/q0*qhatp*dphi1drp-dphi1dthp*dydrp)*fp/radiusp/bfldp**2*grcgtp &
           !      U dot grady
           +utp*hztdgyp
           !---------------------------------------------------------------------------------
@@ -961,7 +965,7 @@ subroutine cpush(n,ns)
   real :: fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,avwixezp,dnisrczp
   !twk: declare some variables --------------------------------------------------
   real :: domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgxcgyp
-  real :: bdgbfldp,bdgutp,bdgphi1p,sn(4),cn(4)              
+  real :: dphi1drp,dphi1dthp,bdgphi1p,sn(4),cn(4)              
   real :: e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp
   !------------------------------------------------------------------------------
 
@@ -992,7 +996,7 @@ subroutine cpush(n,ns)
 !$omp private(phip,exp1,eyp,ezp,delbxp,delbyp,dpdzp,dadzp,aparp,xs,xt,yt,vfac,vp0,vpar,bstar,enerb,xdot,ydot,zdot) &
 !$omp private(pzd0,pzdot,edot,dum,dum1,vxdum,kap,w3old,laps,qr) &
 !$omp private(fdum,gdum,fisrcp,dnisrcp,avwixepsp,fovg,dtp,avwixezp,dnisrczp) &
-!$omp private(domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,bdgbfldp,bdgutp,bdgphi1p) &
+!$omp private(domgp,utp,srbrp,srbzp,hrdgyp,hzdgyp,hztdgyp,hrdgzp,hzdgzp,dphi1drp,dphi1dthp,bdgphi1p) &
 !$omp private(e1rp,e1zp,e2rp,e2zp,e2ztp,rhoreyp,rhozeyp,rhoztexp,rhozteyp,rhoztezp,bdgxcgyp) &
 !$omp reduction(+: myavewi,myke,mypfl_es,mypfl_em,myefl_es,myefl_em,mynos,mynowi)
   do m=1,mm(ns)
@@ -1066,10 +1070,10 @@ subroutine cpush(n,ns)
           +wx1*wz0*hrdgz(i+1,k)+wx1*wz1*hrdgz(i+1,k+1) 
      hzdgzp = wx0*wz0*hzdgz(i,k)+wx0*wz1*hzdgz(i,k+1) &
           +wx1*wz0*hzdgz(i+1,k)+wx1*wz1*hzdgz(i+1,k+1) 
-     bdgbfldp = wx0*wz0*bdgbfld(i,k)+wx0*wz1*bdgbfld(i,k+1) &
-          +wx1*wz0*bdgbfld(i+1,k)+wx1*wz1*bdgbfld(i+1,k+1) 
-     bdgutp = wx0*wz0*bdgut(i,k)+wx0*wz1*bdgut(i,k+1) &
-          +wx1*wz0*bdgut(i+1,k)+wx1*wz1*bdgut(i+1,k+1) 
+     dphi1drp = wx0*wz0*dphi1dr(i,k)+wx0*wz1*dphi1dr(i,k+1) &
+          +wx1*wz0*dphi1dr(i+1,k)+wx1*wz1*dphi1dr(i+1,k+1) 
+     dphi1dthp = wx0*wz0*dphi1dth(i,k)+wx0*wz1*dphi1dth(i,k+1) &
+          +wx1*wz0*dphi1dth(i+1,k)+wx1*wz1*dphi1dth(i+1,k+1) 
      bdgphi1p = wx0*wz0*bdgphi1(i,k)+wx0*wz1*bdgphi1(i,k+1) &
           +wx1*wz0*bdgphi1(i+1,k)+wx1*wz1*bdgphi1(i+1,k+1) 
      e1rp = wx0*wz0*e1r(i,k)+wx0*wz1*e1r(i,k+1) &
@@ -1162,7 +1166,9 @@ subroutine cpush(n,ns)
           -mims(ns)*utp**2/q(ns)/bfldp**2/radiusp**2*fp*srbzp &
           !      coriolis drift dot gradx 
           -2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(psipp**2*(srbrp**2+srbzp**2) &
-          + fp**2)*srbzp
+          + fp**2)*srbzp &
+          !      phi1 E x B dot gradx
+          -dphi1dthp*fp/radiusp/bfldp**2*grcgtp
           !---------------------------------------------------------------------------------
      ydot = (-exp1/b+vpar/b*delbyp)*dum1*nonlin(ns)     &
           +iorb*enerb/bfldp/bfldp*fp/radiusp*grcgtp* &
@@ -1175,6 +1181,8 @@ subroutine cpush(n,ns)
           !      coriolis drift dot grady 
           +2.*mims(ns)*vpar*utp/q(ns)/bfldp**3/radiusp**3*(-psipp**2*srbrp*srbzp*hrdgyp &
           -(fp**2+psipp**2*srbzp**2)*hzdgyp + fp*psipp*srbrp*hztdgyp) &
+          !      phi1 E x B dot grady
+          +(r0/q0*qhatp*dphi1drp-dphi1dthp*dydrp)*fp/radiusp/bfldp**2*grcgtp &
           !      U dot grady
           +utp*hztdgyp
           !---------------------------------------------------------------------------------
