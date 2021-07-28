@@ -44,7 +44,7 @@ MODULE gem_equil
 
 !twk: new variables for implement of toroidal flow    U=-omg*R    -------------------------------------
   real,dimension(:),allocatable :: omg,domg
-  real,dimension(:,:),allocatable :: ut,dphi1dr,dphi1dth,phi1,bdgphi1,radius2
+  real,dimension(:,:),allocatable :: ut,dphi1dr,dphi1dth,phi1,bdgphi1
   real,dimension(:,:),allocatable :: hrdgy,hzdgy,hrdgz,hzdgz,hztdgy    !They are hat{R} dot grad y ...
   real,dimension(:,:),allocatable :: e1r,e1z,e2r,e2z,e2zet
 !------------------------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ contains
       !twk: allocate --------------------------------------------------------------------------------------------
       allocate(omg(0:nr),domg(0:nr),ut(0:nr,0:ntheta),dphi1dr(0:nr,0:ntheta),dphi1dth(0:nr,0:ntheta),&
                hrdgy(0:nr,0:ntheta),hzdgy(0:nr,0:ntheta),hrdgz(0:nr,0:ntheta),hzdgz(0:nr,0:ntheta),&
-               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta),radius2(0:nr,0:ntheta),&
+               hztdgy(0:nr,0:ntheta),phi1(0:nr,0:ntheta),bdgphi1(0:nr,0:ntheta),&
                e1r(0:nr,0:ntheta),e1z(0:nr,0:ntheta),e2r(0:nr,0:ntheta),e2z(0:nr,0:ntheta),e2zet(0:nr,0:ntheta))
       !----------------------------------------------------------------------------------------------------------
 
@@ -172,9 +172,6 @@ contains
             th = -pi+dth*j
             radius(i,j) = rmaj(i)+r*cos(th+asin(tria(i))*sin(th))
             hght(i,j) = r*elon(i)*sin(th)
-            !twk:  R^2 -----------------------------
-            radius2(i,j) = radius(i,j)**2
-            !---------------------------------------
          end do
       end do
 
@@ -472,7 +469,7 @@ contains
          dum1 = 0.
          dum2 = 0.
          do j = 0,ntheta
-            dum1 = dum1 + jacob(i,j)*r0*rmaj0*radius2(i,j)*dth
+            dum1 = dum1 + jacob(i,j)*r0*rmaj0*radius(i,j)**2*dth
             dum2 = dum2 + jacob(i,j)*r0*rmaj0*dth
          enddo
          do j = 0,ntheta
