@@ -789,7 +789,7 @@ subroutine ppush(n,ns)
           !twk:  parallel acceleration due to toroidal flow---------------------------------
           -2.*utp**2/radiusp*psipp/radiusp/bfldp*srbzp - q(ns)/mims(ns)*bdgphi1p
           !---------------------------------------------------------------------------------
-     edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
+     edot = q(ns)*(xdot*exp1+(ydot-vp0-utp*hztdgyp)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
           +q(ns)*vpar*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)    &
           -q(ns)*vpar*delbxp*vp0 &
@@ -1199,7 +1199,7 @@ subroutine cpush(n,ns)
           -2.*utp**2/radiusp*psipp/radiusp/bfldp*srbzp - q(ns)/mims(ns)*bdgphi1p
           !---------------------------------------------------------------------------------
 
-     edot = q(ns)*(xdot*exp1+(ydot-vp0)*eyp+zdot*ezp)                      &
+     edot = q(ns)*(xdot*exp1+(ydot-vp0-utp*hztdgyp)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
           +q(ns)*vpar*(-xdot*delbyp+ydot*delbxp+zdot*dadzp)   &
           -q(ns)*vpar*delbxp*vp0 &
