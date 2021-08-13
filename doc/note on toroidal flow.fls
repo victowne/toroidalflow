@@ -150,6 +150,9 @@ INPUT ./fig1.png
 INPUT fig2.png
 INPUT ./fig2.png
 INPUT ./fig2.png
+INPUT fig3.png
+INPUT ./fig3.png
+INPUT ./fig3.png
 INPUT note on toroidal flow.bbl
 INPUT note on toroidal flow.bbl
 INPUT note on toroidal flow.aux
