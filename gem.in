@@ -1,28 +1,28 @@
 &primary_parameters
 itube=0       !0: global simulation; 1: flux tube 
 imx=256       !number of grid points along x direction
-jmx=32        !number of grid points along y direction
+jmx=32       !number of grid points along y direction
 kmx=64        !number of grid points along z direction, the primary domain decomposition. 
-micell=8      !total no of marker particles of ions
+micell=8     !total no of marker particles of ions
 mecell=16     !total no of marker particles of electrons
 nsmx=1        !maximum number if impurity ions
 nsm=1         !number of ion species
 
 ntube=1       !calculated from numprocs and km
-lxa=0.4       !radial box size divided by a
+lxa=0.6       !radial box size divided by a
 r0a=0.5       !r0/a; center of the radial domain
-lymult=19      !the lowest nonzero toroidal mode number, Ly=2*pi*r0/q0/lymult
+lymult=20      !the lowest nonzero toroidal mode number, Ly=2*pi*r0/q0/lymult
 jcnt=3       !number of toroidal mode numbers.  +n and -n count as two different modes, plus the n=0 mode
 dt=1.0         !times steps in units of omega_u=eB/mp
-nm=10000       !total no of times steps
+nm=20000       !total no of times steps
 
-amp=1e-4      !amplitude of initial weight defined in loading (loadi and ldel)
+amp=1e-3      !amplitude of initial weight defined in loading (loadi and ldel)
 isg=1.0       !split weigh factor, almost always 1.0
-ifluid=1      !0: no kinetic electron; 1: invokes kinetic electron
+ifluid=0      !0: no kinetic electron; 1: invokes kinetic electron
 
-amie=1800.    !proton to electron mass ratio
+amie=918.    !proton to electron mass ratio
 rneui=0e-4    !ion electron(?) collision frequency
-betai=1.0e-2   !electron beta
+betai=5.0e-3   !electron beta
 
 nonlin1=0     !switch for ion nl terms. 0: linear; 1: nl
 nonlin2=0     !
@@ -67,7 +67,7 @@ mlk=1         !binormal wavenumber index for some diagnostics
 onemd=1       !onemd=1 keeps only one mode in y, e.g. in linear n-scan
 izonal=1      !0: remove the zonal component
 
-adiabatic_electron=0    !adiabatic electron options. 0: non; 1: adiabatic
+adiabatic_electron=1    !adiabatic electron options. 0: non; 1: adiabatic
 ineq0=1       !ineq0=0 to remove n=0 
 nzcrt=4       !the kx components to be removed from n=0 component. All i<nzcrt components are removed
 npze=1        !used to define maximum change in electron toroidal canonical momentum pzcrite, for marker control
@@ -97,8 +97,8 @@ iorb=1        !always 1. To include finite orbit width term (??). Multiplied to 
 nxsrc=100      !number of bins in x for source
 nesrc=200      !number of bins in eps for source
 nzsrc=4
-gammah=1e-8   !orb5 heat source rate
-ghzon=1e-8
+gammah=0e-8   !orb5 heat source rate
+ghzon=0e-8
 gamgtc=0e-2   !gtc heat source rate
 gamtoy=0e-4   !toy heat source rate 
 /
@@ -111,7 +111,7 @@ nplot=100     !the interval in time steps, at which the data are stored for cont
 xnplt=10       !the interval in time steps at which spec and dchi called to calculate potentials, weight, fluxes and other stuff
 isft=0        !if isft=1, code calculates the real frequency 
 mynf=10       !nfreq=kmx*mynf no of points in in Fourier transform
-frmax=0.005   !maximum range of frequency
+frmax=0.05   !maximum range of frequency
 ifskp=10      !used in yveck1 and ftcamp,  nsize=nm/ifskp
 idg=0         !0 always; 1, writes various component to the output file run.out
 /
@@ -135,7 +135,7 @@ Rovlte=6.9   !electron temperature gradient scale length normalized to major rad
 Rovlnc=12.     !impurity density gradient scale length normalized to major radius
 Rovltc=0.     !impurity temperature gradient scale length normalized to major radius
 ncne=1.0e-8   !measure of impurity concentration, ratio of impurity to electron density
-nuacs=1.e-3    !electron ion collision frequency???
+nuacs=0.e-3    !electron ion collision frequency???
 /
 &others
 nrst=1000     !sets the interval in time steps after which the coarse graining is to be invoked  
