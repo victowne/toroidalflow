@@ -1,9 +1,9 @@
-PWD c:/Users/Administrator/Desktop/doc
+PWD d:/git/toroidalflow/doc
 INPUT c:/texlive/2017/texmf.cnf
 INPUT c:/texlive/2017/texmf-dist/web2c/texmf.cnf
 INPUT c:/texlive/2017/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT c:/Users/Administrator/Desktop/doc/note on toroidal flow.tex
-OUTPUT note on toroidal flow.log
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.tex
+OUTPUT d:/git/toroidalflow/doc/note on toroidal flow.log
 INPUT c:/texlive/2017/texmf-dist/tex/latex/base/article.cls
 INPUT c:/texlive/2017/texmf-dist/tex/latex/base/article.cls
 INPUT c:/texlive/2017/texmf-dist/tex/latex/base/size12.clo
@@ -72,9 +72,9 @@ INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics/color.sty
 INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics/color.sty
 INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/color.cfg
 INPUT c:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/color.cfg
-INPUT note on toroidal flow.aux
-INPUT note on toroidal flow.aux
-OUTPUT note on toroidal flow.aux
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.aux
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.aux
+OUTPUT d:/git/toroidalflow/doc/note on toroidal flow.aux
 INPUT c:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 INPUT c:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 INPUT c:/texlive/2017/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
@@ -87,14 +87,14 @@ INPUT c:/texlive/2017/texmf-dist/tex/latex/hyperref/nameref.sty
 INPUT c:/texlive/2017/texmf-dist/tex/latex/hyperref/nameref.sty
 INPUT c:/texlive/2017/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 INPUT c:/texlive/2017/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
-INPUT note on toroidal flow.out
-INPUT note on toroidal flow.out
-INPUT note on toroidal flow.out
-INPUT note on toroidal flow.out
-OUTPUT note on toroidal flow.pdf
-INPUT ./note on toroidal flow.out
-INPUT ./note on toroidal flow.out
-OUTPUT note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+OUTPUT d:/git/toroidalflow/doc/note on toroidal flow.pdf
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+OUTPUT d:/git/toroidalflow/doc/note on toroidal flow.out
 INPUT c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.bdg
 INPUT c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.enc
 INPUT c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.chr
@@ -114,10 +114,10 @@ INPUT c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu70.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/arphic/gbsnu/gbsnu5e.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmr17.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
-INPUT note on toroidal flow.toc
-INPUT note on toroidal flow.toc
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.toc
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.toc
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
-OUTPUT note on toroidal flow.toc
+OUTPUT d:/git/toroidalflow/doc/note on toroidal flow.toc
 INPUT c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
@@ -144,20 +144,20 @@ INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti8.tfm
 INPUT c:/texlive/2017/texmf-dist/fonts/tfm/public/cm/cmti7.tfm
-INPUT fig1.png
-INPUT ./fig1.png
-INPUT ./fig1.png
-INPUT fig2.png
-INPUT ./fig2.png
-INPUT ./fig2.png
-INPUT fig3.png
-INPUT ./fig3.png
-INPUT ./fig3.png
-INPUT note on toroidal flow.bbl
-INPUT note on toroidal flow.bbl
-INPUT note on toroidal flow.aux
-INPUT ./note on toroidal flow.out
-INPUT ./note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/fig1.png
+INPUT d:/git/toroidalflow/doc/fig1.png
+INPUT d:/git/toroidalflow/doc/fig1.png
+INPUT d:/git/toroidalflow/doc/fig2.png
+INPUT d:/git/toroidalflow/doc/fig2.png
+INPUT d:/git/toroidalflow/doc/fig2.png
+INPUT d:/git/toroidalflow/doc/fig3.png
+INPUT d:/git/toroidalflow/doc/fig3.png
+INPUT d:/git/toroidalflow/doc/fig3.png
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.bbl
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.bbl
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.aux
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
+INPUT d:/git/toroidalflow/doc/note on toroidal flow.out
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb
 INPUT c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
