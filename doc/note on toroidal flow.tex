@@ -26,7 +26,7 @@ question why you're doing this. If you're patient, the plateaus will become spri
 \newpage
 \section{Guiding center drift due to toroidal flow}
 In the right-handed coordinate system (R,Z,$\zeta$), consider the toroidal flow with the form of $\mathbf{U}(\mathbf{R}) = -\omega(r)R^2 \nabla \zeta$, where $r$ is a flux label.
-In the rotating moving frame\cite{artun1994}, we have ${\mathbf v'=\mathbf v-\mathbf U}$. Then 
+In the rotating frame\cite{artun1994}, we have ${\mathbf v'=\mathbf v-\mathbf U}$. Then 
 \begin{equation}
     {\rm Centrifugal\ force}\ :\ F_{cf} = m_a\omega^2R\hat{R}
 \end{equation}
@@ -213,14 +213,14 @@ Notice that $v_{\parallel}{''}$ depends on ($\mathbf{R},\varepsilon,\mu$) but no
 The new parallel velocity is defined with $\varepsilon^{\mu}$. Since $d\varepsilon^{\mu}/dt=\mathcal{O}(\delta^2)$,
 \begin{equation}
 \begin{split}
-    mv_{\parallel}''\frac{dv_{\parallel}''}{dt} &= -\mu\frac{dB\mathbf{(R)}}{dt} + m\frac{dU^2}{dt} - q\frac{d\Phi_1}{dt}\\
-    &=-\mu v_{\parallel}''\mathbf{b}\cdot\nabla B + mv_{\parallel}''\mathbf{b}\cdot\nabla U^2 - qv_{\parallel}''
+    mv_{\parallel}''\frac{dv_{\parallel}''}{dt} &= -\mu\frac{dB\mathbf{(R)}}{dt} + \frac{1}{2}m\frac{dU^2}{dt} - q\frac{d\Phi_1}{dt}\\
+    &=-\mu v_{\parallel}''\mathbf{b}\cdot\nabla B + \frac{1}{2}mv_{\parallel}''\mathbf{b}\cdot\nabla U^2 - qv_{\parallel}''
     \mathbf{b}\cdot\nabla\Phi_1 + \mathcal{O}(\delta^2)
 \end{split}
 \end{equation}
 We will neglect the $\mathcal{O}(\delta^2)$ terms, which include the parallel nonlinearity.
 \begin{equation}
-    \frac{dv_{\parallel}''}{dt} = -\frac{\mu}{m}\mathbf{b}\cdot\nabla B + \mathbf{b}\cdot\nabla U^2 - \frac{q}{m}\mathbf{b}\cdot\nabla\Phi_1 + \mathcal{O}(\delta^2)
+    \frac{dv_{\parallel}''}{dt} = -\frac{\mu}{m}\mathbf{b}\cdot\nabla B + \frac{1}{2}\mathbf{b}\cdot\nabla U^2 - \frac{q}{m}\mathbf{b}\cdot\nabla\Phi_1 + \mathcal{O}(\delta^2)
 \end{equation}
 Term 1 of the r.h.s. of the above equation is the mirror force, which has been implemented in GEM.
 
