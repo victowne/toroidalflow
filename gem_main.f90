@@ -787,7 +787,7 @@ subroutine ppush(n,ns)
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
           +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0. &
           !twk:  parallel acceleration due to toroidal flow---------------------------------
-          -2.*utp**2/radiusp*psipp/radiusp/bfldp*srbzp - q(ns)/mims(ns)*bdgphi1p
+          -utp**2/radiusp*psipp/radiusp/bfldp*srbzp - q(ns)/mims(ns)*bdgphi1p
           !---------------------------------------------------------------------------------
      edot = q(ns)*(xdot*exp1+(ydot-vp0-utp*hztdgyp)*eyp+zdot*ezp)                      &
           +q(ns)*pzdot*aparp*tor     &
@@ -1196,7 +1196,7 @@ subroutine cpush(n,ns)
      pzdot = pzd0 + (q(ns)/mims(ns)*ezp*q0*br0/radiusp/b*psipp*grcgtp/jfnp  &
           +q(ns)/mims(ns)*(-xdot*delbyp+ydot*delbxp+zdot*dadzp))*0. &
           !twk:  parallel acceleration due to toroidal flow---------------------------------
-          -2.*utp**2/radiusp*psipp/radiusp/bfldp*srbzp - q(ns)/mims(ns)*bdgphi1p
+          -utp**2/radiusp*psipp/radiusp/bfldp*srbzp - q(ns)/mims(ns)*bdgphi1p
           !---------------------------------------------------------------------------------
 
      edot = q(ns)*(xdot*exp1+(ydot-vp0-utp*hztdgyp)*eyp+zdot*ezp)                      &
