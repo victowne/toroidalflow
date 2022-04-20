@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.4.6)  11 SEP 2021 12:20
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2018.4.6)  20 APR 2022 12:48
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -7,9 +7,9 @@ entering extended mode
 (d:/git/toroidalflow/doc/note on toroidal flow.tex
 LaTeX2e <2017-04-15>
 Babel <3.10> and hyphenation patterns for 6 language(s) loaded.
-(c:/texlive/2017/texmf-dist/tex/latex/base/article.cls
+(d:/texlive/2017/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
-(c:/texlive/2017/texmf-dist/tex/latex/base/size12.clo
+(d:/texlive/2017/texmf-dist/tex/latex/base/size12.clo
 File: size12.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count79
@@ -23,58 +23,58 @@ File: size12.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 \abovecaptionskip=\skip41
 \belowcaptionskip=\skip42
 \bibindent=\dimen102
-) (c:/texlive/2017/texmf-dist/tex/latex/graphics/graphicx.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
- (c:/texlive/2017/texmf-dist/tex/latex/graphics/keyval.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/graphics/keyval.sty
 Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
 \KV@toks@=\toks14
-) (c:/texlive/2017/texmf-dist/tex/latex/graphics/graphics.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/graphics/graphics.sty
 Package: graphics 2017/04/14 v1.1b Standard LaTeX Graphics (DPC,SPQR)
- (c:/texlive/2017/texmf-dist/tex/latex/graphics/trig.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/graphics/trig.sty
 Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
-) (c:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+) (d:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
 File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
 )
 Package graphics Info: Driver file: pdftex.def on input line 99.
- (c:/texlive/2017/texmf-dist/tex/latex/graphics-def/pdftex.def
+ (d:/texlive/2017/texmf-dist/tex/latex/graphics-def/pdftex.def
 File: pdftex.def 2017/01/12 v0.06k Graphics/color for pdfTeX
- (c:/texlive/2017/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+ (d:/texlive/2017/texmf-dist/tex/generic/oberdiek/infwarerr.sty
 Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
-) (c:/texlive/2017/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+) (d:/texlive/2017/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
 Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
 )
 \Gread@gobject=\count87
 ))
 \Gin@req@height=\dimen103
 \Gin@req@width=\dimen104
-) (c:/texlive/2017/texmf-dist/tex/latex/cite/cite.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/cite/cite.sty
 LaTeX Info: Redefining \cite on input line 302.
 LaTeX Info: Redefining \nocite on input line 332.
 Package: cite 2015/02/27  v 5.5
-) (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/CJK.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/CJK.sty
 Package: CJK 2015/04/18 4.8.4
- (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/mule/MULEenc.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/mule/MULEenc.sty
 Package: MULEenc 2015/04/18 4.8.4
-) (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/CJK.enc
+) (d:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/CJK.enc
 File: CJK.enc 2015/04/18 4.8.4
 )
 LaTeX Info: Redefining \selectfont on input line 755.
 \CJK@indent=\box26
-) (c:/texlive/2017/texmf-dist/tex/latex/amsmath/amsmath.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/amsmath/amsmath.sty
 Package: amsmath 2016/11/05 v2.16a AMS math features
 \@mathmargin=\skip43
 
 For additional information on amsmath, use the `?' option.
-(c:/texlive/2017/texmf-dist/tex/latex/amsmath/amstext.sty
+(d:/texlive/2017/texmf-dist/tex/latex/amsmath/amstext.sty
 Package: amstext 2000/06/29 v2.01 AMS text
- (c:/texlive/2017/texmf-dist/tex/latex/amsmath/amsgen.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/amsmath/amsgen.sty
 File: amsgen.sty 1999/11/30 v2.0 generic functions
 \@emptytoks=\toks15
 \ex@=\dimen105
-)) (c:/texlive/2017/texmf-dist/tex/latex/amsmath/amsbsy.sty
+)) (d:/texlive/2017/texmf-dist/tex/latex/amsmath/amsbsy.sty
 Package: amsbsy 1999/11/29 v1.2d Bold Symbols
 \pmbraise@=\dimen106
-) (c:/texlive/2017/texmf-dist/tex/latex/amsmath/amsopn.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/amsmath/amsopn.sty
 Package: amsopn 2016/03/08 v2.02 operator names
 )
 \inf@bad=\count88
@@ -114,11 +114,11 @@ LaTeX Font Info:    Redeclaring font encoding OMS on input line 713.
 \mathdisplay@stack=\toks19
 LaTeX Info: Redefining \[ on input line 2817.
 LaTeX Info: Redefining \] on input line 2818.
-) (c:/texlive/2017/texmf-dist/tex/latex/hyperref/hyperref.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/hyperref/hyperref.sty
 Package: hyperref 2017/03/14 v6.85a Hypertext links for LaTeX
- (c:/texlive/2017/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
+ (d:/texlive/2017/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
 Package: hobsub-hyperref 2016/05/16 v1.14 Bundle oberdiek, subset hyperref (HO)
- (c:/texlive/2017/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty
+ (d:/texlive/2017/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty
 Package: hobsub-generic 2016/05/16 v1.14 Bundle oberdiek, subset generic (HO)
 Package: hobsub 2016/05/16 v1.14 Construct package bundles (HO)
 Package hobsub Info: Skipping package `infwarerr' (already loaded).
@@ -155,21 +155,21 @@ Package atveryend Info: \enddocument detected (standard20110627).
 Package: atbegshi 2016/06/09 v1.18 At begin shipout hook (HO)
 Package: refcount 2016/05/16 v3.5 Data extraction from label references (HO)
 Package: hycolor 2016/05/16 v1.8 Color options for hyperref/bookmark (HO)
-) (c:/texlive/2017/texmf-dist/tex/generic/ifxetex/ifxetex.sty
+) (d:/texlive/2017/texmf-dist/tex/generic/ifxetex/ifxetex.sty
 Package: ifxetex 2010/09/12 v0.6 Provides ifxetex conditional
-) (c:/texlive/2017/texmf-dist/tex/latex/oberdiek/auxhook.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/oberdiek/auxhook.sty
 Package: auxhook 2016/05/16 v1.4 Hooks for auxiliary files (HO)
-) (c:/texlive/2017/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/oberdiek/kvoptions.sty
 Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
 )
 \@linkdim=\dimen114
 \Hy@linkcounter=\count100
 \Hy@pagecounter=\count101
- (c:/texlive/2017/texmf-dist/tex/latex/hyperref/pd1enc.def
+ (d:/texlive/2017/texmf-dist/tex/latex/hyperref/pd1enc.def
 File: pd1enc.def 2017/03/14 v6.85a Hyperref: PDFDocEncoding definition (HO)
 )
 \Hy@SavedSpaceFactor=\count102
- (c:/texlive/2017/texmf-dist/tex/latex/latexconfig/hyperref.cfg
+ (d:/texlive/2017/texmf-dist/tex/latex/latexconfig/hyperref.cfg
 File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
 )
 Package hyperref Info: Option `colorlinks' set `true' on input line 4374.
@@ -181,7 +181,7 @@ Package hyperref Info: Backreferencing OFF on input line 4518.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
 Package hyperref Info: Bookmarks ON on input line 4751.
 \c@Hy@tempcnt=\count103
- (c:/texlive/2017/texmf-dist/tex/latex/url/url.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip11
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
@@ -206,20 +206,20 @@ LaTeX Info: Redefining \pageref on input line 6432.
 
 Package hyperref Message: Driver (autodetected): hpdftex.
 
-(c:/texlive/2017/texmf-dist/tex/latex/hyperref/hpdftex.def
+(d:/texlive/2017/texmf-dist/tex/latex/hyperref/hpdftex.def
 File: hpdftex.def 2017/03/14 v6.85a Hyperref driver for pdfTeX
 \Fld@listcount=\count108
 \c@bookmark@seq@number=\count109
- (c:/texlive/2017/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
 Package: rerunfilecheck 2016/05/16 v1.8 Rerun checks for auxiliary files (HO)
 Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 282.
 )
 \Hy@SectionHShift=\skip46
-) (c:/texlive/2017/texmf-dist/tex/latex/parskip/parskip.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/parskip/parskip.sty
 Package: parskip 2001/04/09 non-zero parskip adjustments
-) (c:/texlive/2017/texmf-dist/tex/latex/graphics/color.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/graphics/color.sty
 Package: color 2016/07/10 v1.1e Standard LaTeX Color (DPC)
- (c:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/color.cfg
+ (d:/texlive/2017/texmf-dist/tex/latex/graphics-cfg/color.cfg
 File: color.cfg 2016/01/02 v1.6 sample color configuration
 )
 Package color Info: Driver file: pdftex.def on input line 147.
@@ -304,7 +304,7 @@ LaTeX Font Info:    Checking defaults for C62/song/m/n on input line 11.
 LaTeX Font Info:    ... okay on input line 11.
 LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 11.
 LaTeX Font Info:    ... okay on input line 11.
- (c:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+ (d:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count110
 \scratchdimen=\dimen118
@@ -317,23 +317,23 @@ LaTeX Font Info:    ... okay on input line 11.
 \MPnumerator=\count114
 \makeMPintoPDFobject=\count115
 \everyMPtoPDFconversion=\toks21
-) (c:/texlive/2017/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+) (d:/texlive/2017/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
- (c:/texlive/2017/texmf-dist/tex/latex/oberdiek/grfext.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/oberdiek/grfext.sty
 Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
 )
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 438.
 Package grfext Info: Graphics extension search list:
 (grfext)             [.png,.pdf,.jpg,.mps,.jpeg,.jbig2,.jb2,.PNG,.PDF,.JPG,.JPEG,.JBIG2,.JB2,.eps]
 (grfext)             \AppendGraphicsExtensions on input line 456.
- (c:/texlive/2017/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+ (d:/texlive/2017/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
 \AtBeginShipoutBox=\box30
 Package hyperref Info: Link coloring ON on input line 11.
- (c:/texlive/2017/texmf-dist/tex/latex/hyperref/nameref.sty
+ (d:/texlive/2017/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
- (c:/texlive/2017/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
+ (d:/texlive/2017/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
 )
 \c@section@level=\count116
@@ -345,40 +345,34 @@ LaTeX Info: Redefining \nameref on input line 11.
 \@outlinefile=\write3
 \openout3 = `"note on toroidal flow.out"'.
 
- (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.bdg
+ (d:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.bdg
 File: UTF8.bdg 2015/04/18 4.8.4
-) (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.enc
+) (d:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.enc
 File: UTF8.enc 2015/04/18 4.8.4
-) (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.chr
+) (d:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/UTF8.chr
 File: UTF8.chr 2015/04/18 4.8.4
-)
-LaTeX Font Info:    Try loading font information for C70+gbsn on input line 17.
- (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/c70gbsn.fd
-File: c70gbsn.fd 2015/04/18 4.8.4
-) (c:/texlive/2017/texmf-dist/tex/latex/cjk/texinput/utf8/c70gbsn.fdx
-File: c70gbsn.fdx 2015/04/18 4.8.4
 ) (d:/git/toroidalflow/doc/note on toroidal flow.toc)
 \tf@toc=\write4
 \openout4 = `"note on toroidal flow.toc"'.
 
  [1
 
-{c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5] [6] [7] [8] [9] [10]
+{d:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2] [3] [4] [5] [6] [7] [8] [9] [10]
 Overfull \hbox (9.02988pt too wide) in paragraph at lines 367--367
 [] 
  []
 
-[11] [12] [13] <fig1.png, id=177, 830.79616pt x 336.6423pt>
+[11] [12] [13] <fig1.png, id=174, 830.79616pt x 336.6423pt>
 File: fig1.png Graphic file (type png)
  <use fig1.png>
 Package pdftex.def Info: fig1.png used on input line 465.
 (pdftex.def)             Requested size: 390.0pt x 158.03183pt.
- <fig2.png, id=179, 842.94756pt x 355.27689pt>
+ <fig2.png, id=176, 842.94756pt x 355.27689pt>
 File: fig2.png Graphic file (type png)
  <use fig2.png>
 Package pdftex.def Info: fig2.png used on input line 471.
 (pdftex.def)             Requested size: 390.0pt x 164.37262pt.
- <fig3.png, id=180, 863.8674pt x 385.44pt>
+ <fig3.png, id=177, 863.8674pt x 385.44pt>
 File: fig3.png Graphic file (type png)
  <use fig3.png>
 Package pdftex.def Info: fig3.png used on input line 477.
@@ -400,18 +394,18 @@ Package rerunfilecheck Info: File `"note on toroidal flow".out' has not changed.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 532.
  ) 
 Here is how much of TeX's memory you used:
- 6920 strings out of 494880
- 96704 string characters out of 6179284
+ 6894 strings out of 494880
+ 96174 string characters out of 6179284
  195195 words of memory out of 5000000
- 10057 multiletter control sequences out of 15000+600000
- 14816 words of font info for 53 fonts, out of 8000000 for 9000
+ 10037 multiletter control sequences out of 15000+600000
+ 13948 words of font info for 50 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
  28i,19n,28p,364b,508s stack positions out of 5000i,500n,10000p,200000b,80000s
-<c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu5e.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu6c.pfb><c:/texlive/2017/texmf-dist/fonts/type1/arphic/gbsnu/gbsnu70.pfb>
-Output written on "d:/git/toroidalflow/doc/note on toroidal flow.pdf" (17 pages, 1155143 bytes).
+<d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><d:/texlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on "d:/git/toroidalflow/doc/note on toroidal flow.pdf" (17 pages, 1147540 bytes).
 PDF statistics:
- 287 PDF objects out of 1000 (max. 8388607)
- 239 compressed objects within 3 object streams
+ 275 PDF objects out of 1000 (max. 8388607)
+ 230 compressed objects within 3 object streams
  81 named destinations out of 1000 (max. 500000)
  48 words of extra memory for PDF output out of 10000 (max. 10000000)
 
